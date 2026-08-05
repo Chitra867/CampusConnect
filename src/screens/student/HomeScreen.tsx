@@ -1,5 +1,6 @@
 import {
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -24,8 +25,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import EventCard from "../../components/EventCard";
-import { EVENTS } from "../../data/events";
+
 import { useAuthStore } from "../../store/authStore";
+import { useEventStore } from "../../store/eventStore";
 
 import {
   useRegistrationStore,
@@ -34,6 +36,7 @@ import {
 import { colors } from "../../theme/colors";
 
 import {
+  CampusEvent,
   StudentRootStackParamList,
 } from "../../types";
 
@@ -48,49 +51,83 @@ export default function HomeScreen() {
     (state) => state.user
   );
 
-  const registeredEventIds =
+  const events = useEventStore(
+    (state) => state.events
+  );
+
+  const registrations =
     useRegistrationStore(
-      (state) =>
-        state.registeredEventIds
+      (state) => state.registrations
     );
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
-  const filteredEvents = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+  const filteredEvents =
+    useMemo<CampusEvent[]>(() => {
+      const query = search
+        .trim()
+        .toLowerCase();
 
-    const eventsWithRegistration =
-      EVENTS.map((event) => ({
-        ...event,
+      const registrationCountMap =
+        registrations.reduce<
+          Record<string, number>
+        >((counts, registration) => {
+          if (
+            registration.status !==
+            "registered"
+          ) {
+            return counts;
+          }
 
-        registered:
-          event.registered +
-          (registeredEventIds.includes(
-            event.id
-          )
-            ? 1
-            : 0),
-      }));
+          counts[registration.eventId] =
+            (counts[
+              registration.eventId
+            ] ?? 0) + 1;
 
-    if (!query) {
-      return eventsWithRegistration;
-    }
+          return counts;
+        }, {});
 
-    return eventsWithRegistration.filter(
-      (event) =>
-        event.title
-          .toLowerCase()
-          .includes(query) ||
-        event.category
-          .toLowerCase()
-          .includes(query) ||
-        event.venue
-          .toLowerCase()
-          .includes(query)
-    );
-  }, [search, registeredEventIds]);
+      const publishedEvents = events
+        .filter(
+          (event) =>
+            event.status ===
+            "published"
+        )
+        .map((event) => ({
+          ...event,
+
+          registered:
+            event.registered +
+            (registrationCountMap[
+              event.id
+            ] ?? 0),
+        }));
+
+      if (!query) {
+        return publishedEvents;
+      }
+
+      return publishedEvents.filter(
+        (event) =>
+          event.title
+            .toLowerCase()
+            .includes(query) ||
+          event.category
+            .toLowerCase()
+            .includes(query) ||
+          event.venue
+            .toLowerCase()
+            .includes(query) ||
+          event.organizerName
+            .toLowerCase()
+            .includes(query)
+      );
+    }, [
+      events,
+      registrations,
+      search,
+    ]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,27 +135,40 @@ export default function HomeScreen() {
         data={filteredEvents}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <View>
+              <View style={styles.headerContent}>
                 <Text style={styles.welcome}>
                   Welcome back
                 </Text>
 
-                <Text style={styles.name}>
-                  {user?.fullName}
+                <Text
+                  style={styles.name}
+                  numberOfLines={1}
+                >
+                  {user?.fullName ??
+                    "Campus Student"}
                 </Text>
               </View>
 
-              <View style={styles.notification}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View notifications"
+                style={({ pressed }) => [
+                  styles.notification,
+                  pressed &&
+                    styles.pressed,
+                ]}
+              >
                 <Ionicons
                   name="notifications-outline"
                   size={23}
                   color={colors.primary}
                 />
-              </View>
+              </Pressable>
             </View>
 
             <View style={styles.hero}>
@@ -133,11 +183,13 @@ export default function HomeScreen() {
                 </Text>
               </View>
 
-              <Ionicons
-                name="calendar"
-                size={55}
-                color={colors.white}
-              />
+              <View style={styles.heroIcon}>
+                <Ionicons
+                  name="calendar"
+                  size={48}
+                  color={colors.white}
+                />
+              </View>
             </View>
 
             <View style={styles.searchBox}>
@@ -150,20 +202,31 @@ export default function HomeScreen() {
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search events..."
+                placeholder="Search events, venue or club..."
                 placeholderTextColor={
                   colors.textSecondary
                 }
+                autoCorrect={false}
                 style={styles.searchInput}
               />
 
               {search.length > 0 ? (
-                <Ionicons
-                  name="close-circle"
-                  size={21}
-                  color={colors.textSecondary}
-                  onPress={() => setSearch("")}
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  onPress={() =>
+                    setSearch("")
+                  }
+                  hitSlop={10}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={21}
+                    color={
+                      colors.textSecondary
+                    }
+                  />
+                </Pressable>
               ) : null}
             </View>
 
@@ -173,7 +236,10 @@ export default function HomeScreen() {
               </Text>
 
               <Text style={styles.eventCount}>
-                {filteredEvents.length} events
+                {filteredEvents.length}{" "}
+                {filteredEvents.length === 1
+                  ? "event"
+                  : "events"}
               </Text>
             </View>
           </>
@@ -193,18 +259,21 @@ export default function HomeScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons
-              name="search-outline"
-              size={48}
-              color={colors.textSecondary}
-            />
+            <View style={styles.emptyIcon}>
+              <Ionicons
+                name="search-outline"
+                size={48}
+                color={colors.primary}
+              />
+            </View>
 
             <Text style={styles.emptyTitle}>
               No events found
             </Text>
 
             <Text style={styles.emptyDescription}>
-              Try another title, category or venue.
+              Try another event title, category,
+              venue or organizer.
             </Text>
           </View>
         }
@@ -228,9 +297,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingTop: 10,
     paddingBottom: 20,
+  },
+
+  headerContent: {
+    flex: 1,
+    paddingRight: 12,
   },
 
   welcome: {
@@ -282,6 +355,16 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
+  heroIcon: {
+    width: 76,
+    height: 76,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 24,
+    backgroundColor:
+      "rgba(255,255,255,0.15)",
+  },
+
   searchBox: {
     minHeight: 52,
     flexDirection: "row",
@@ -321,19 +404,35 @@ const styles = StyleSheet.create({
 
   empty: {
     alignItems: "center",
+    paddingHorizontal: 25,
     paddingVertical: 55,
   },
 
+  emptyIcon: {
+    width: 92,
+    height: 92,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 30,
+    backgroundColor: colors.primarySoft,
+  },
+
   emptyTitle: {
-    marginTop: 14,
+    marginTop: 16,
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 19,
+    fontWeight: "900",
   },
 
   emptyDescription: {
-    marginTop: 6,
+    marginTop: 7,
     color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: "center",
+  },
+
+  pressed: {
+    opacity: 0.8,
   },
 });

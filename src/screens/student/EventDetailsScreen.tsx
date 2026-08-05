@@ -15,7 +15,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { EVENTS } from "../../data/events";
+import { useAuthStore } from "../../store/authStore";
+import { useEventStore } from "../../store/eventStore";
 
 import {
   useRegistrationStore,
@@ -35,10 +36,17 @@ type Props = NativeStackScreenProps<
 export default function EventDetailsScreen({
   route,
 }: Props) {
-  const registeredEventIds =
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
+  const events = useEventStore(
+    (state) => state.events
+  );
+
+  const registrations =
     useRegistrationStore(
-      (state) =>
-        state.registeredEventIds
+      (state) => state.registrations
     );
 
   const registerEvent =
@@ -52,7 +60,7 @@ export default function EventDetailsScreen({
         state.cancelRegistration
     );
 
-  const event = EVENTS.find(
+  const event = events.find(
     (item) =>
       item.id === route.params.eventId
   );
@@ -68,16 +76,37 @@ export default function EventDetailsScreen({
   }
 
   const registered =
-    registeredEventIds.includes(event.id);
+    Boolean(user) &&
+    registrations.some(
+      (registration) =>
+        registration.eventId ===
+          event.id &&
+        registration.studentId ===
+          user?.id &&
+        registration.status ===
+          "registered"
+    );
+
+  const localRegistrationCount =
+    registrations.filter(
+      (registration) =>
+        registration.eventId ===
+          event.id &&
+        registration.status ===
+          "registered"
+    ).length;
 
   const registeredCount =
     event.registered +
-    (registered ? 1 : 0);
+    localRegistrationCount;
 
   const availableSeats = Math.max(
     event.capacity - registeredCount,
     0
   );
+
+  const eventUnavailable =
+    event.status !== "published";
 
   const eventFull =
     availableSeats === 0 &&
@@ -96,12 +125,25 @@ export default function EventDetailsScreen({
           {
             text: "Cancel Registration",
             style: "destructive",
+
             onPress: () => {
-              cancelRegistration(event.id);
+              const cancelled =
+                cancelRegistration(
+                  event.id
+                );
+
+              if (cancelled) {
+                Alert.alert(
+                  "Registration Cancelled",
+                  `${event.title} has been removed from My Events.`
+                );
+
+                return;
+              }
 
               Alert.alert(
-                "Registration Cancelled",
-                "The event has been removed from My Events."
+                "Unable to Cancel",
+                "The registration could not be found."
               );
             },
           },
@@ -111,41 +153,59 @@ export default function EventDetailsScreen({
       return;
     }
 
-    const result = registerEvent(event.id);
+    const result =
+      registerEvent(event.id);
 
-    if (result === "registered") {
-      Alert.alert(
-        "Registration Successful",
-        `${event.title} has been added to My Events.`
-      );
+    switch (result) {
+      case "registered":
+        Alert.alert(
+          "Registration Successful",
+          `${event.title} has been added to My Events.`
+        );
+        return;
 
-      return;
+      case "already_registered":
+        Alert.alert(
+          "Already Registered",
+          "This event is already in My Events."
+        );
+        return;
+
+      case "event_full":
+        Alert.alert(
+          "Event Full",
+          "No seats are currently available."
+        );
+        return;
+
+      case "event_unavailable":
+        Alert.alert(
+          "Event Unavailable",
+          "This event is not currently accepting registrations."
+        );
+        return;
+
+      case "not_authenticated":
+        Alert.alert(
+          "Login Required",
+          "Please log in before registering for an event."
+        );
+        return;
+
+      case "student_only":
+        Alert.alert(
+          "Student Account Required",
+          "Only student accounts can register for events."
+        );
+        return;
+
+      case "event_not_found":
+      default:
+        Alert.alert(
+          "Unable to Register",
+          "The selected event could not be found."
+        );
     }
-
-    if (
-      result === "already_registered"
-    ) {
-      Alert.alert(
-        "Already Registered",
-        "This event is already in My Events."
-      );
-
-      return;
-    }
-
-    if (result === "event_full") {
-      Alert.alert(
-        "Event Full",
-        "No seats are currently available."
-      );
-
-      return;
-    }
-
-    Alert.alert(
-      "Unable to Register",
-      "The selected event could not be found."
-    );
   };
 
   return (
@@ -193,6 +253,20 @@ export default function EventDetailsScreen({
           </View>
         ) : null}
 
+        {eventUnavailable ? (
+          <View style={styles.cancelledBanner}>
+            <Ionicons
+              name="alert-circle"
+              size={21}
+              color={colors.danger}
+            />
+
+            <Text style={styles.cancelledText}>
+              This event is {event.status}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.informationCard}>
           <InformationRow
             icon="calendar-outline"
@@ -218,7 +292,7 @@ export default function EventDetailsScreen({
             value={
               availableSeats > 0
                 ? `${availableSeats} of ${event.capacity} seats available`
-                : "No seats available"
+                : "No seats currently available"
             }
             isLast
           />
@@ -233,19 +307,30 @@ export default function EventDetailsScreen({
         </Text>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            registered
+              ? "Cancel event registration"
+              : "Register for event"
+          }
           onPress={handleRegistration}
-          disabled={eventFull}
+          disabled={
+            !registered &&
+            (eventUnavailable ||
+              eventFull)
+          }
           style={({ pressed }) => [
             styles.registerButton,
 
             registered &&
               styles.cancelButton,
 
-            eventFull &&
+            !registered &&
+              (eventUnavailable ||
+                eventFull) &&
               styles.disabledButton,
 
             pressed &&
-              !eventFull &&
               styles.pressed,
           ]}
         >
@@ -253,7 +338,8 @@ export default function EventDetailsScreen({
             name={
               registered
                 ? "close-circle-outline"
-                : eventFull
+                : eventUnavailable ||
+                    eventFull
                   ? "ban-outline"
                   : "ticket-outline"
             }
@@ -264,9 +350,11 @@ export default function EventDetailsScreen({
           <Text style={styles.registerText}>
             {registered
               ? "Cancel Registration"
-              : eventFull
-                ? "Event Full"
-                : "Register for Event"}
+              : eventUnavailable
+                ? "Event Unavailable"
+                : eventFull
+                  ? "Event Full"
+                  : "Register for Event"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -343,7 +431,6 @@ const styles = StyleSheet.create({
     height: 215,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
     borderRadius: 25,
     backgroundColor: colors.primarySoft,
   },
@@ -393,6 +480,24 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: 14,
     fontWeight: "800",
+  },
+
+  cancelledBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    padding: 14,
+    gap: 9,
+    borderRadius: 14,
+    backgroundColor: "#FFF1F1",
+  },
+
+  cancelledText: {
+    flex: 1,
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: "800",
+    textTransform: "capitalize",
   },
 
   informationCard: {

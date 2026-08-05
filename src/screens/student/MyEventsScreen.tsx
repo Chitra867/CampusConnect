@@ -21,7 +21,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import EventCard from "../../components/EventCard";
-import { EVENTS } from "../../data/events";
+
+import { useAuthStore } from "../../store/authStore";
+import { useEventStore } from "../../store/eventStore";
 
 import {
   useRegistrationStore,
@@ -41,10 +43,17 @@ export default function MyEventsScreen() {
   const navigation =
     useNavigation<NavigationProp>();
 
-  const registeredEventIds =
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
+  const events = useEventStore(
+    (state) => state.events
+  );
+
+  const registrations =
     useRegistrationStore(
-      (state) =>
-        state.registeredEventIds
+      (state) => state.registrations
     );
 
   const cancelRegistration =
@@ -55,15 +64,65 @@ export default function MyEventsScreen() {
 
   const registeredEvents =
     useMemo<CampusEvent[]>(() => {
-      return EVENTS.filter((event) =>
-        registeredEventIds.includes(
-          event.id
+      if (!user) {
+        return [];
+      }
+
+      const currentStudentEventIds =
+        new Set(
+          registrations
+            .filter(
+              (registration) =>
+                registration.studentId ===
+                  user.id &&
+                registration.status ===
+                  "registered"
+            )
+            .map(
+              (registration) =>
+                registration.eventId
+            )
+        );
+
+      const registrationCountMap =
+        registrations.reduce<
+          Record<string, number>
+        >((counts, registration) => {
+          if (
+            registration.status !==
+            "registered"
+          ) {
+            return counts;
+          }
+
+          counts[registration.eventId] =
+            (counts[
+              registration.eventId
+            ] ?? 0) + 1;
+
+          return counts;
+        }, {});
+
+      return events
+        .filter((event) =>
+          currentStudentEventIds.has(
+            event.id
+          )
         )
-      ).map((event) => ({
-        ...event,
-        registered: event.registered + 1,
-      }));
-    }, [registeredEventIds]);
+        .map((event) => ({
+          ...event,
+
+          registered:
+            event.registered +
+            (registrationCountMap[
+              event.id
+            ] ?? 0),
+        }));
+    }, [
+      events,
+      registrations,
+      user,
+    ]);
 
   const handleCancel = (
     event: CampusEvent
@@ -79,8 +138,19 @@ export default function MyEventsScreen() {
         {
           text: "Cancel Registration",
           style: "destructive",
+
           onPress: () => {
-            cancelRegistration(event.id);
+            const cancelled =
+              cancelRegistration(
+                event.id
+              );
+
+            if (!cancelled) {
+              Alert.alert(
+                "Unable to Cancel",
+                "The registration could not be found."
+              );
+            }
           },
         },
       ]
@@ -145,8 +215,8 @@ export default function MyEventsScreen() {
             </Text>
 
             <Text style={styles.emptyDescription}>
-              Open an event from the Home screen
-              and select Register for Event.
+              Open an event from Home and select
+              Register for Event.
             </Text>
           </View>
         }

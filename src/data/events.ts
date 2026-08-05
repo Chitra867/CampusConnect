@@ -1,6 +1,6 @@
 import { CampusEvent } from "../types";
 
-export const EVENTS: CampusEvent[] = [
+export const INITIAL_EVENTS: CampusEvent[] = [
   {
     id: "1",
     title: "React Native Workshop",
@@ -13,6 +13,10 @@ export const EVENTS: CampusEvent[] = [
     capacity: 60,
     registered: 42,
     organizerName: "IT Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "2",
@@ -26,6 +30,10 @@ export const EVENTS: CampusEvent[] = [
     capacity: 150,
     registered: 98,
     organizerName: "Sports Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "3",
@@ -39,6 +47,10 @@ export const EVENTS: CampusEvent[] = [
     capacity: 80,
     registered: 55,
     organizerName: "Design Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "4",
@@ -52,6 +64,10 @@ export const EVENTS: CampusEvent[] = [
     capacity: 120,
     registered: 75,
     organizerName: "Career Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "5",
@@ -65,6 +81,10 @@ export const EVENTS: CampusEvent[] = [
     capacity: 70,
     registered: 61,
     organizerName: "Programming Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "6",
@@ -78,5 +98,9 @@ export const EVENTS: CampusEvent[] = [
     capacity: 50,
     registered: 31,
     organizerName: "Music Club",
+    createdBy: "organizer-1",
+    status: "published",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
   },
 ];
