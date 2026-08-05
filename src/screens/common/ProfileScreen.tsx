@@ -42,15 +42,15 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>
+        <Text style={styles.pageTitle}>
           Profile
         </Text>
 
-        <View style={styles.card}>
+        <View style={styles.profileCard}>
           <View style={styles.avatar}>
             <Ionicons
               name="person"
-              size={42}
+              size={44}
               color={colors.primary}
             />
           </View>
@@ -105,17 +105,17 @@ const styles = StyleSheet.create({
     padding: 18,
   },
 
-  title: {
+  pageTitle: {
     marginTop: 8,
     color: colors.text,
     fontSize: 28,
     fontWeight: "900",
   },
 
-  card: {
+  profileCard: {
     alignItems: "center",
     marginTop: 24,
-    padding: 25,
+    padding: 26,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
@@ -123,11 +123,11 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 88,
-    height: 88,
+    width: 90,
+    height: 90,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 28,
+    borderRadius: 30,
     backgroundColor: colors.primarySoft,
   },
 
@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
 
   roleBadge: {
     marginTop: 13,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 15,
+    paddingVertical: 7,
     borderRadius: 20,
     backgroundColor: colors.primarySoft,
   },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
 
   logoutButton: {
-    minHeight: 54,
+    minHeight: 55,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

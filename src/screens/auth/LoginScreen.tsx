@@ -27,6 +27,8 @@ export default function LoginScreen() {
     useState("");
   const [role, setRole] =
     useState<UserRole>("student");
+  const [showPassword, setShowPassword] =
+    useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = () => {
@@ -59,15 +61,16 @@ export default function LoginScreen() {
         }
       >
         <ScrollView
-          keyboardShouldPersistTaps="handled"
           contentContainerStyle={
             styles.scrollContent
           }
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.logo}>
+          <View style={styles.logoContainer}>
             <Ionicons
               name="school"
-              size={40}
+              size={42}
               color={colors.white}
             />
           </View>
@@ -76,25 +79,25 @@ export default function LoginScreen() {
             CampusConnect
           </Text>
 
-          <Text style={styles.subtitle}>
-            Discover events and connect with your
-            campus community.
+          <Text style={styles.appDescription}>
+            Discover campus events and connect
+            with your college community.
           </Text>
 
           <View style={styles.card}>
-            <Text style={styles.heading}>
+            <Text style={styles.title}>
               Welcome Back
             </Text>
 
-            <Text style={styles.description}>
-              Login to continue to CampusConnect.
+            <Text style={styles.subtitle}>
+              Login to continue.
             </Text>
 
             <Text style={styles.label}>
               Login as
             </Text>
 
-            <View style={styles.roles}>
+            <View style={styles.roleContainer}>
               <RoleButton
                 label="Student"
                 icon="person-outline"
@@ -107,7 +110,9 @@ export default function LoginScreen() {
               <RoleButton
                 label="Organizer"
                 icon="people-outline"
-                selected={role === "organizer"}
+                selected={
+                  role === "organizer"
+                }
                 onPress={() =>
                   setRole("organizer")
                 }
@@ -134,6 +139,7 @@ export default function LoginScreen() {
                 }
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
                 style={styles.input}
               />
             </View>
@@ -156,9 +162,28 @@ export default function LoginScreen() {
                 placeholderTextColor={
                   colors.textSecondary
                 }
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 style={styles.input}
               />
+
+              <Pressable
+                onPress={() =>
+                  setShowPassword(
+                    (current) => !current
+                  )
+                }
+                hitSlop={10}
+              >
+                <Ionicons
+                  name={
+                    showPassword
+                      ? "eye-off-outline"
+                      : "eye-outline"
+                  }
+                  size={21}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
             </View>
 
             {error ? (
@@ -186,8 +211,9 @@ export default function LoginScreen() {
             </Pressable>
 
             <Text style={styles.demoText}>
-              Demo: enter any valid email and a
-              password with at least 4 characters.
+              Demo login: use any email and a
+              password with at least four
+              characters.
             </Text>
           </View>
         </ScrollView>
@@ -257,13 +283,13 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
 
-  logo: {
-    width: 76,
-    height: 76,
+  logoContainer: {
+    width: 78,
+    height: 78,
     alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 24,
+    borderRadius: 25,
     backgroundColor: colors.primary,
   },
 
@@ -275,9 +301,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  subtitle: {
+  appDescription: {
+    alignSelf: "center",
+    maxWidth: 330,
     marginTop: 8,
-    marginBottom: 24,
+    marginBottom: 25,
     color: colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
@@ -292,13 +320,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
-  heading: {
+  title: {
     color: colors.text,
     fontSize: 24,
     fontWeight: "900",
   },
 
-  description: {
+  subtitle: {
     marginTop: 5,
     marginBottom: 22,
     color: colors.textSecondary,
@@ -312,7 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  roles: {
+  roleContainer: {
     flexDirection: "row",
     marginBottom: 20,
     gap: 10,
@@ -328,6 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
   selectedRole: {
@@ -398,4 +427,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: "center",
   },
-});
+}); 

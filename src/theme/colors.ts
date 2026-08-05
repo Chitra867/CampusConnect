@@ -11,7 +11,6 @@ export const colors = {
 
   border: "#E4E5EC",
   success: "#16845B",
-  warning: "#E69A23",
   danger: "#D64545",
 
   white: "#FFFFFF",

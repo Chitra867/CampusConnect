@@ -1,5 +1,4 @@
 import {
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -8,101 +7,86 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { EVENTS } from "../../data/events";
+import { useAuthStore } from "../../store/authStore";
 import { colors } from "../../theme/colors";
 
 export default function OrganizerDashboardScreen() {
-  const registrations = EVENTS.reduce(
-    (total, event) =>
-      total + event.registered,
-    0
+  const user = useAuthStore(
+    (state) => state.user
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-      >
-        <Text style={styles.title}>
-          Organizer Dashboard
+      <View style={styles.content}>
+        <Text style={styles.welcome}>
+          Welcome
+        </Text>
+
+        <Text style={styles.name}>
+          {user?.fullName}
         </Text>
 
         <Text style={styles.subtitle}>
-          Manage your campus events.
+          Manage events and student registrations.
         </Text>
 
-        <View style={styles.grid}>
+        <View style={styles.statsContainer}>
           <StatCard
-            title="Events"
-            value={EVENTS.length.toString()}
             icon="calendar-outline"
-          />
-
-          <StatCard
-            title="Registrations"
-            value={registrations.toString()}
-            icon="people-outline"
-          />
-
-          <StatCard
-            title="Upcoming"
-            value={EVENTS.length.toString()}
-            icon="time-outline"
-          />
-
-          <StatCard
-            title="Completed"
             value="0"
+            label="Events"
+          />
+
+          <StatCard
+            icon="people-outline"
+            value="0"
+            label="Registrations"
+          />
+
+          <StatCard
+            icon="time-outline"
+            value="0"
+            label="Upcoming"
+          />
+
+          <StatCard
             icon="checkmark-circle-outline"
+            value="0"
+            label="Completed"
           />
         </View>
 
-        <Text style={styles.sectionTitle}>
-          Recent Events
-        </Text>
+        <View style={styles.emptyCard}>
+          <Ionicons
+            name="add-circle-outline"
+            size={50}
+            color={colors.primary}
+          />
 
-        {EVENTS.slice(0, 3).map((event) => (
-          <View
-            key={event.id}
-            style={styles.eventRow}
-          >
-            <View style={styles.eventIcon}>
-              <Ionicons
-                name="calendar-outline"
-                size={23}
-                color={colors.primary}
-              />
-            </View>
+          <Text style={styles.emptyTitle}>
+            Create your first event
+          </Text>
 
-            <View style={styles.eventContent}>
-              <Text
-                style={styles.eventTitle}
-                numberOfLines={1}
-              >
-                {event.title}
-              </Text>
-
-              <Text style={styles.eventMeta}>
-                {event.registered} registrations
-              </Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          <Text style={styles.emptyDescription}>
+            Event creation and management will be
+            added in the organizer feature.
+          </Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 interface StatCardProps {
-  title: string;
-  value: string;
   icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  label: string;
 }
 
 function StatCard({
-  title,
-  value,
   icon,
+  value,
+  label,
 }: StatCardProps) {
   return (
     <View style={styles.statCard}>
@@ -118,8 +102,8 @@ function StatCard({
         {value}
       </Text>
 
-      <Text style={styles.statTitle}>
-        {title}
+      <Text style={styles.statLabel}>
+        {label}
       </Text>
     </View>
   );
@@ -132,12 +116,18 @@ const styles = StyleSheet.create({
   },
 
   content: {
+    flex: 1,
     padding: 18,
-    paddingBottom: 30,
   },
 
-  title: {
+  welcome: {
     marginTop: 8,
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+
+  name: {
+    marginTop: 3,
     color: colors.text,
     fontSize: 28,
     fontWeight: "900",
@@ -149,11 +139,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  grid: {
+  statsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 24,
+    marginTop: 26,
   },
 
   statCard: {
@@ -167,11 +157,11 @@ const styles = StyleSheet.create({
   },
 
   statIcon: {
-    width: 43,
-    height: 43,
+    width: 42,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 13,
+    marginBottom: 12,
     borderRadius: 14,
     backgroundColor: colors.primarySoft,
   },
@@ -182,54 +172,34 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  statTitle: {
+  statLabel: {
     marginTop: 3,
     color: colors.textSecondary,
     fontSize: 13,
   },
 
-  sectionTitle: {
-    marginTop: 16,
-    marginBottom: 14,
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-
-  eventRow: {
-    flexDirection: "row",
+  emptyCard: {
     alignItems: "center",
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: 17,
+    marginTop: 18,
+    padding: 28,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
 
-  eventIcon: {
-    width: 45,
-    height: 45,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: colors.primarySoft,
-  },
-
-  eventContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  eventTitle: {
+  emptyTitle: {
+    marginTop: 14,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "800",
   },
 
-  eventMeta: {
-    marginTop: 4,
+  emptyDescription: {
+    marginTop: 7,
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
   },
 });

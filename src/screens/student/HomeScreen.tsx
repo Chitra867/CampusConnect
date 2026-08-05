@@ -1,18 +1,12 @@
 import {
-  Alert,
-  FlatList,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
-import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import EventCard from "../../components/EventCard";
-import { EVENTS } from "../../data/events";
 import { useAuthStore } from "../../store/authStore";
 import { colors } from "../../theme/colors";
 
@@ -21,122 +15,69 @@ export default function HomeScreen() {
     (state) => state.user
   );
 
-  const [search, setSearch] = useState("");
-
-  const filteredEvents = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return EVENTS;
-    }
-
-    return EVENTS.filter((event) =>
-      event.title.toLowerCase().includes(query)
-    );
-  }, [search]);
-
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={filteredEvents}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={
-          <>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.welcome}>
-                  Welcome back
-                </Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcome}>
+              Welcome back
+            </Text>
 
-                <Text style={styles.name}>
-                  {user?.fullName}
-                </Text>
-              </View>
-
-              <View style={styles.notification}>
-                <Ionicons
-                  name="notifications-outline"
-                  size={23}
-                  color={colors.primary}
-                />
-              </View>
-            </View>
-
-            <View style={styles.hero}>
-              <View style={styles.heroContent}>
-                <Text style={styles.heroTitle}>
-                  Explore Campus Events
-                </Text>
-
-                <Text style={styles.heroText}>
-                  Discover workshops, seminars,
-                  competitions and sports programs.
-                </Text>
-              </View>
-
-              <Ionicons
-                name="calendar"
-                size={54}
-                color={colors.white}
-              />
-            </View>
-
-            <View style={styles.searchBox}>
-              <Ionicons
-                name="search-outline"
-                size={21}
-                color={colors.textSecondary}
-              />
-
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search events..."
-                placeholderTextColor={
-                  colors.textSecondary
-                }
-                style={styles.searchInput}
-              />
-            </View>
-
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Upcoming Events
-              </Text>
-
-              <Text style={styles.eventCount}>
-                {filteredEvents.length} events
-              </Text>
-            </View>
-          </>
-        }
-        renderItem={({ item }) => (
-          <EventCard
-            event={item}
-            onPress={() =>
-              Alert.alert(
-                item.title,
-                item.description
-              )
-            }
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons
-              name="search-outline"
-              size={46}
-              color={colors.textSecondary}
-            />
-
-            <Text style={styles.emptyTitle}>
-              No events found
+            <Text style={styles.name}>
+              {user?.fullName}
             </Text>
           </View>
-        }
-      />
+
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={colors.primary}
+            />
+          </View>
+        </View>
+
+        <View style={styles.hero}>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>
+              Explore Campus Events
+            </Text>
+
+            <Text style={styles.heroDescription}>
+              Discover workshops, seminars,
+              competitions and club activities.
+            </Text>
+          </View>
+
+          <Ionicons
+            name="calendar"
+            size={58}
+            color={colors.white}
+          />
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          Upcoming Events
+        </Text>
+
+        <View style={styles.emptyCard}>
+          <Ionicons
+            name="calendar-outline"
+            size={48}
+            color={colors.primary}
+          />
+
+          <Text style={styles.emptyTitle}>
+            Event module is ready next
+          </Text>
+
+          <Text style={styles.emptyDescription}>
+            Events will be displayed here after
+            the event feature is added.
+          </Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -148,16 +89,16 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: 18,
-    paddingBottom: 28,
+    flex: 1,
+    padding: 18,
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 22,
   },
 
   welcome: {
@@ -166,13 +107,13 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    marginTop: 2,
+    marginTop: 3,
     color: colors.text,
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: "900",
   },
 
-  notification: {
+  iconContainer: {
     width: 46,
     height: 46,
     alignItems: "center",
@@ -182,79 +123,61 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    minHeight: 150,
+    minHeight: 160,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 18,
-    padding: 21,
+    padding: 22,
     borderRadius: 24,
     backgroundColor: colors.primary,
   },
 
   heroContent: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 12,
   },
 
   heroTitle: {
     color: colors.white,
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: "900",
   },
 
-  heroText: {
-    marginTop: 8,
-    color: "#E9E6FF",
+  heroDescription: {
+    marginTop: 9,
+    color: "#EAE7FF",
     fontSize: 14,
     lineHeight: 21,
   },
 
-  searchBox: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 23,
-    paddingHorizontal: 15,
-    gap: 10,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  searchInput: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 15,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
-  },
-
   sectionTitle: {
+    marginTop: 26,
+    marginBottom: 14,
     color: colors.text,
     fontSize: 20,
     fontWeight: "900",
   },
 
-  eventCount: {
-    color: colors.textSecondary,
-    fontSize: 13,
-  },
-
-  empty: {
+  emptyCard: {
     alignItems: "center",
-    paddingVertical: 50,
+    padding: 28,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
   emptyTitle: {
-    marginTop: 12,
+    marginTop: 14,
     color: colors.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
+  },
+
+  emptyDescription: {
+    marginTop: 7,
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
   },
 });

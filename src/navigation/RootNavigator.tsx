@@ -12,23 +12,24 @@ import AuthNavigator from "./AuthNavigator";
 
 import ProfileScreen from "../screens/common/ProfileScreen";
 import OrganizerDashboardScreen from "../screens/organizer/OrganizerDashboardScreen";
-import ManageEventsScreen from "../screens/organizer/ManageEventsScreen";
 import HomeScreen from "../screens/student/HomeScreen";
-import MyEventsScreen from "../screens/student/MyEventsScreen";
 
 import { useAuthStore } from "../store/authStore";
 import { colors } from "../theme/colors";
 
 const StudentTab = createBottomTabNavigator();
-const OrganizerTab = createBottomTabNavigator();
+const OrganizerTab =
+  createBottomTabNavigator();
 
 function StudentNavigator() {
   return (
     <StudentTab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+
         tabBarActiveTintColor:
           colors.primary,
+
         tabBarInactiveTintColor:
           colors.textSecondary,
 
@@ -54,15 +55,11 @@ function StudentNavigator() {
             string,
             keyof typeof Ionicons.glyphMap
           > = {
-            Home: focused
+            StudentHome: focused
               ? "home"
               : "home-outline",
 
-            MyEvents: focused
-              ? "calendar"
-              : "calendar-outline",
-
-            Profile: focused
+            StudentProfile: focused
               ? "person"
               : "person-outline",
           };
@@ -81,21 +78,19 @@ function StudentNavigator() {
       })}
     >
       <StudentTab.Screen
-        name="Home"
+        name="StudentHome"
         component={HomeScreen}
-      />
-
-      <StudentTab.Screen
-        name="MyEvents"
-        component={MyEventsScreen}
         options={{
-          tabBarLabel: "My Events",
+          tabBarLabel: "Home",
         }}
       />
 
       <StudentTab.Screen
-        name="Profile"
+        name="StudentProfile"
         component={ProfileScreen}
+        options={{
+          tabBarLabel: "Profile",
+        }}
       />
     </StudentTab.Navigator>
   );
@@ -106,8 +101,10 @@ function OrganizerNavigator() {
     <OrganizerTab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+
         tabBarActiveTintColor:
           colors.primary,
+
         tabBarInactiveTintColor:
           colors.textSecondary,
 
@@ -133,15 +130,11 @@ function OrganizerNavigator() {
             string,
             keyof typeof Ionicons.glyphMap
           > = {
-            Dashboard: focused
+            OrganizerDashboard: focused
               ? "grid"
               : "grid-outline",
 
-            Events: focused
-              ? "calendar"
-              : "calendar-outline",
-
-            Profile: focused
+            OrganizerProfile: focused
               ? "person"
               : "person-outline",
           };
@@ -160,18 +153,21 @@ function OrganizerNavigator() {
       })}
     >
       <OrganizerTab.Screen
-        name="Dashboard"
-        component={OrganizerDashboardScreen}
+        name="OrganizerDashboard"
+        component={
+          OrganizerDashboardScreen
+        }
+        options={{
+          tabBarLabel: "Dashboard",
+        }}
       />
 
       <OrganizerTab.Screen
-        name="Events"
-        component={ManageEventsScreen}
-      />
-
-      <OrganizerTab.Screen
-        name="Profile"
+        name="OrganizerProfile"
         component={ProfileScreen}
+        options={{
+          tabBarLabel: "Profile",
+        }}
       />
     </OrganizerTab.Navigator>
   );
