@@ -39,3 +39,21 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
+node_modules/
+.expo/
+dist/
+web-build/
+
+.env
+.env.*
+!.env.example
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.DS_Store
+.vscode/
