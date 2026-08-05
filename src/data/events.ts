@@ -9,9 +9,10 @@ export const EVENTS: CampusEvent[] = [
     date: "August 12, 2026",
     time: "10:00 AM",
     description:
-      "A practical React Native workshop covering components, navigation, state management and mobile development.",
+      "A practical React Native workshop covering components, navigation, state management, reusable UI and mobile application development.",
     capacity: 60,
     registered: 42,
+    organizerName: "IT Club",
   },
   {
     id: "2",
@@ -21,9 +22,10 @@ export const EVENTS: CampusEvent[] = [
     date: "August 15, 2026",
     time: "8:00 AM",
     description:
-      "A campus sports program featuring football, basketball, running and other activities.",
+      "Join students from different departments for football, basketball, running and other campus sporting activities.",
     capacity: 150,
     registered: 98,
+    organizerName: "Sports Club",
   },
   {
     id: "3",
@@ -33,9 +35,10 @@ export const EVENTS: CampusEvent[] = [
     date: "August 18, 2026",
     time: "11:30 AM",
     description:
-      "Design a modern mobile application interface and present your design process.",
+      "Design an original mobile application interface and present your design process to the judging panel.",
     capacity: 80,
     registered: 55,
+    organizerName: "Design Club",
   },
   {
     id: "4",
@@ -45,8 +48,35 @@ export const EVENTS: CampusEvent[] = [
     date: "August 22, 2026",
     time: "1:00 PM",
     description:
-      "Learn about internships, CV preparation, interviews and professional networking.",
+      "Learn about internships, CV preparation, technical interviews, networking and professional career planning.",
     capacity: 120,
     registered: 75,
+    organizerName: "Career Club",
+  },
+  {
+    id: "5",
+    title: "Coding Competition",
+    category: "Technology",
+    venue: "Computer Lab 1",
+    date: "August 25, 2026",
+    time: "9:30 AM",
+    description:
+      "Solve programming challenges individually and compete with students from different semesters.",
+    capacity: 70,
+    registered: 61,
+    organizerName: "Programming Club",
+  },
+  {
+    id: "6",
+    title: "Music Club Audition",
+    category: "Cultural",
+    venue: "Activity Hall",
+    date: "August 28, 2026",
+    time: "2:00 PM",
+    description:
+      "Audition for the campus music club as a singer, instrumentalist or music production volunteer.",
+    capacity: 50,
+    registered: 31,
+    organizerName: "Music Club",
   },
 ];

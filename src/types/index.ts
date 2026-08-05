@@ -6,3 +6,23 @@ export interface AuthUser {
   email: string;
   role: UserRole;
 }
+
+export interface CampusEvent {
+  id: string;
+  title: string;
+  category: string;
+  venue: string;
+  date: string;
+  time: string;
+  description: string;
+  capacity: number;
+  registered: number;
+  organizerName: string;
+}
+
+export type StudentStackParamList = {
+  Home: undefined;
+  EventDetails: {
+    eventId: string;
+  };
+};

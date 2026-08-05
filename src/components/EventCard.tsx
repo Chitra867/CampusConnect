@@ -12,7 +12,7 @@ import { CampusEvent } from "../types";
 
 interface EventCardProps {
   event: CampusEvent;
-  onPress?: () => void;
+  onPress: () => void;
 }
 
 export default function EventCard({
@@ -31,17 +31,17 @@ export default function EventCard({
       ]}
     >
       <View style={styles.poster}>
-        <Ionicons
-          name="calendar-outline"
-          size={46}
-          color={colors.primary}
-        />
-
         <View style={styles.categoryBadge}>
           <Text style={styles.categoryText}>
             {event.category}
           </Text>
         </View>
+
+        <Ionicons
+          name="calendar"
+          size={52}
+          color={colors.primary}
+        />
       </View>
 
       <View style={styles.content}>
@@ -78,11 +78,17 @@ export default function EventCard({
             {availableSeats} seats available
           </Text>
 
-          <Ionicons
-            name="arrow-forward"
-            size={18}
-            color={colors.primary}
-          />
+          <View style={styles.details}>
+            <Text style={styles.detailsText}>
+              Details
+            </Text>
+
+            <Ionicons
+              name="arrow-forward"
+              size={17}
+              color={colors.primary}
+            />
+          </View>
         </View>
       </View>
     </Pressable>
@@ -127,7 +133,7 @@ const styles = StyleSheet.create({
   },
 
   pressed: {
-    opacity: 0.85,
+    opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
 
@@ -196,5 +202,17 @@ const styles = StyleSheet.create({
 
   lowSeats: {
     color: colors.danger,
+  },
+
+  details: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  detailsText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
   },
 });

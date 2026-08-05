@@ -1,83 +1,181 @@
 import {
+  FlatList,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
+import {
+  useMemo,
+  useState,
+} from "react";
+
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import EventCard from "../../components/EventCard";
+import { EVENTS } from "../../data/events";
 import { useAuthStore } from "../../store/authStore";
 import { colors } from "../../theme/colors";
+import { StudentStackParamList } from "../../types";
 
-export default function HomeScreen() {
+type Props = NativeStackScreenProps<
+  StudentStackParamList,
+  "Home"
+>;
+
+export default function HomeScreen({
+  navigation,
+}: Props) {
   const user = useAuthStore(
     (state) => state.user
   );
 
+  const [search, setSearch] = useState("");
+
+  const filteredEvents = useMemo(() => {
+    const query = search
+      .trim()
+      .toLowerCase();
+
+    if (!query) {
+      return EVENTS;
+    }
+
+    return EVENTS.filter((event) => {
+      return (
+        event.title
+          .toLowerCase()
+          .includes(query) ||
+        event.category
+          .toLowerCase()
+          .includes(query) ||
+        event.venue
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+  }, [search]);
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.welcome}>
-              Welcome back
-            </Text>
+      <FlatList
+        data={filteredEvents}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.welcome}>
+                  Welcome back
+                </Text>
 
-            <Text style={styles.name}>
-              {user?.fullName}
-            </Text>
-          </View>
+                <Text style={styles.name}>
+                  {user?.fullName}
+                </Text>
+              </View>
 
-          <View style={styles.iconContainer}>
+              <View style={styles.notification}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={23}
+                  color={colors.primary}
+                />
+              </View>
+            </View>
+
+            <View style={styles.hero}>
+              <View style={styles.heroContent}>
+                <Text style={styles.heroTitle}>
+                  Explore Campus Events
+                </Text>
+
+                <Text style={styles.heroText}>
+                  Discover workshops, seminars,
+                  competitions and club programs.
+                </Text>
+              </View>
+
+              <Ionicons
+                name="calendar"
+                size={55}
+                color={colors.white}
+              />
+            </View>
+
+            <View style={styles.searchBox}>
+              <Ionicons
+                name="search-outline"
+                size={21}
+                color={colors.textSecondary}
+              />
+
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search events..."
+                placeholderTextColor={
+                  colors.textSecondary
+                }
+                style={styles.searchInput}
+              />
+
+              {search.length > 0 ? (
+                <Ionicons
+                  name="close-circle"
+                  size={21}
+                  color={colors.textSecondary}
+                  onPress={() => setSearch("")}
+                />
+              ) : null}
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                Upcoming Events
+              </Text>
+
+              <Text style={styles.eventCount}>
+                {filteredEvents.length} events
+              </Text>
+            </View>
+          </>
+        }
+        renderItem={({ item }) => (
+          <EventCard
+            event={item}
+            onPress={() =>
+              navigation.navigate(
+                "EventDetails",
+                {
+                  eventId: item.id,
+                }
+              )
+            }
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
             <Ionicons
-              name="notifications-outline"
-              size={24}
-              color={colors.primary}
+              name="search-outline"
+              size={48}
+              color={colors.textSecondary}
             />
-          </View>
-        </View>
 
-        <View style={styles.hero}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>
-              Explore Campus Events
+            <Text style={styles.emptyTitle}>
+              No events found
             </Text>
 
-            <Text style={styles.heroDescription}>
-              Discover workshops, seminars,
-              competitions and club activities.
+            <Text style={styles.emptyDescription}>
+              Try another title, category or venue.
             </Text>
           </View>
-
-          <Ionicons
-            name="calendar"
-            size={58}
-            color={colors.white}
-          />
-        </View>
-
-        <Text style={styles.sectionTitle}>
-          Upcoming Events
-        </Text>
-
-        <View style={styles.emptyCard}>
-          <Ionicons
-            name="calendar-outline"
-            size={48}
-            color={colors.primary}
-          />
-
-          <Text style={styles.emptyTitle}>
-            Event module is ready next
-          </Text>
-
-          <Text style={styles.emptyDescription}>
-            Events will be displayed here after
-            the event feature is added.
-          </Text>
-        </View>
-      </View>
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -89,16 +187,17 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    flex: 1,
-    padding: 18,
+    flexGrow: 1,
+    paddingHorizontal: 18,
+    paddingBottom: 28,
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 8,
-    paddingBottom: 22,
+    paddingTop: 10,
+    paddingBottom: 20,
   },
 
   welcome: {
@@ -107,13 +206,13 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    marginTop: 3,
+    marginTop: 2,
     color: colors.text,
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: "900",
   },
 
-  iconContainer: {
+  notification: {
     width: 46,
     height: 46,
     alignItems: "center",
@@ -123,61 +222,85 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    minHeight: 160,
+    minHeight: 150,
     flexDirection: "row",
     alignItems: "center",
-    padding: 22,
+    marginBottom: 18,
+    padding: 21,
     borderRadius: 24,
     backgroundColor: colors.primary,
   },
 
   heroContent: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 10,
   },
 
   heroTitle: {
     color: colors.white,
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: "900",
   },
 
-  heroDescription: {
-    marginTop: 9,
-    color: "#EAE7FF",
+  heroText: {
+    marginTop: 8,
+    color: "#E9E6FF",
     fontSize: 14,
     lineHeight: 21,
   },
 
-  sectionTitle: {
-    marginTop: 26,
-    marginBottom: 14,
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-
-  emptyCard: {
+  searchBox: {
+    minHeight: 52,
+    flexDirection: "row",
     alignItems: "center",
-    padding: 28,
-    borderRadius: 20,
+    marginBottom: 23,
+    paddingHorizontal: 15,
+    gap: 10,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
 
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  eventCount: {
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+
+  empty: {
+    alignItems: "center",
+    paddingVertical: 55,
+  },
+
   emptyTitle: {
     marginTop: 14,
     color: colors.text,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "800",
   },
 
   emptyDescription: {
-    marginTop: 7,
+    marginTop: 6,
     color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
     textAlign: "center",
   },
 });

@@ -8,18 +8,60 @@ import {
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
 
+import {
+  createNativeStackNavigator,
+} from "@react-navigation/native-stack";
+
 import AuthNavigator from "./AuthNavigator";
 
 import ProfileScreen from "../screens/common/ProfileScreen";
 import OrganizerDashboardScreen from "../screens/organizer/OrganizerDashboardScreen";
+import EventDetailsScreen from "../screens/student/EventDetailsScreen";
 import HomeScreen from "../screens/student/HomeScreen";
 
 import { useAuthStore } from "../store/authStore";
 import { colors } from "../theme/colors";
+import { StudentStackParamList } from "../types";
 
-const StudentTab = createBottomTabNavigator();
+const StudentStack =
+  createNativeStackNavigator<StudentStackParamList>();
+
+const StudentTab =
+  createBottomTabNavigator();
+
 const OrganizerTab =
   createBottomTabNavigator();
+
+function StudentHomeStack() {
+  return (
+    <StudentStack.Navigator>
+      <StudentStack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <StudentStack.Screen
+        name="EventDetails"
+        component={EventDetailsScreen}
+        options={{
+          title: "Event Details",
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+          headerStyle: {
+            backgroundColor:
+              colors.background,
+          },
+          headerTitleStyle: {
+            fontWeight: "800",
+          },
+        }}
+      />
+    </StudentStack.Navigator>
+  );
+}
 
 function StudentNavigator() {
   return (
@@ -79,7 +121,7 @@ function StudentNavigator() {
     >
       <StudentTab.Screen
         name="StudentHome"
-        component={HomeScreen}
+        component={StudentHomeStack}
         options={{
           tabBarLabel: "Home",
         }}
