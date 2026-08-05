@@ -15,16 +15,22 @@ import {
 import AuthNavigator from "./AuthNavigator";
 
 import ProfileScreen from "../screens/common/ProfileScreen";
+
 import OrganizerDashboardScreen from "../screens/organizer/OrganizerDashboardScreen";
+
 import EventDetailsScreen from "../screens/student/EventDetailsScreen";
 import HomeScreen from "../screens/student/HomeScreen";
+import MyEventsScreen from "../screens/student/MyEventsScreen";
 
 import { useAuthStore } from "../store/authStore";
 import { colors } from "../theme/colors";
-import { StudentStackParamList } from "../types";
 
-const StudentStack =
-  createNativeStackNavigator<StudentStackParamList>();
+import {
+  StudentRootStackParamList,
+} from "../types";
+
+const StudentRootStack =
+  createNativeStackNavigator<StudentRootStackParamList>();
 
 const StudentTab =
   createBottomTabNavigator();
@@ -32,41 +38,11 @@ const StudentTab =
 const OrganizerTab =
   createBottomTabNavigator();
 
-function StudentHomeStack() {
-  return (
-    <StudentStack.Navigator>
-      <StudentStack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-
-      <StudentStack.Screen
-        name="EventDetails"
-        component={EventDetailsScreen}
-        options={{
-          title: "Event Details",
-          headerShadowVisible: false,
-          headerTintColor: colors.text,
-          headerStyle: {
-            backgroundColor:
-              colors.background,
-          },
-          headerTitleStyle: {
-            fontWeight: "800",
-          },
-        }}
-      />
-    </StudentStack.Navigator>
-  );
-}
-
-function StudentNavigator() {
+function StudentTabs() {
   return (
     <StudentTab.Navigator
-      screenOptions={({ route }) => ({
+  id="StudentTabs"
+  screenOptions={({ route }) => ({
         headerShown: false,
 
         tabBarActiveTintColor:
@@ -97,11 +73,15 @@ function StudentNavigator() {
             string,
             keyof typeof Ionicons.glyphMap
           > = {
-            StudentHome: focused
+            Home: focused
               ? "home"
               : "home-outline",
 
-            StudentProfile: focused
+            MyEvents: focused
+              ? "calendar"
+              : "calendar-outline",
+
+            Profile: focused
               ? "person"
               : "person-outline",
           };
@@ -120,28 +100,64 @@ function StudentNavigator() {
       })}
     >
       <StudentTab.Screen
-        name="StudentHome"
-        component={StudentHomeStack}
+        name="Home"
+        component={HomeScreen}
+      />
+
+      <StudentTab.Screen
+        name="MyEvents"
+        component={MyEventsScreen}
         options={{
-          tabBarLabel: "Home",
+          tabBarLabel: "My Events",
         }}
       />
 
       <StudentTab.Screen
-        name="StudentProfile"
+        name="Profile"
         component={ProfileScreen}
-        options={{
-          tabBarLabel: "Profile",
-        }}
       />
     </StudentTab.Navigator>
+  );
+}
+
+function StudentNavigator() {
+  return (
+    <StudentRootStack.Navigator
+  id="StudentRootStack"
+>
+      <StudentRootStack.Screen
+        name="MainTabs"
+        component={StudentTabs}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <StudentRootStack.Screen
+        name="EventDetails"
+        component={EventDetailsScreen}
+        options={{
+          title: "Event Details",
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+          headerStyle: {
+            backgroundColor:
+              colors.background,
+          },
+          headerTitleStyle: {
+            fontWeight: "800",
+          },
+        }}
+      />
+    </StudentRootStack.Navigator>
   );
 }
 
 function OrganizerNavigator() {
   return (
     <OrganizerTab.Navigator
-      screenOptions={({ route }) => ({
+  id="OrganizerTabs"
+  screenOptions={({ route }) => ({
         headerShown: false,
 
         tabBarActiveTintColor:

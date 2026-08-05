@@ -8,21 +8,50 @@ import {
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+
+import {
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+
 import { SafeAreaView } from "react-native-safe-area-context";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { EVENTS } from "../../data/events";
+
+import {
+  useRegistrationStore,
+} from "../../store/registrationStore";
+
 import { colors } from "../../theme/colors";
-import { StudentStackParamList } from "../../types";
+
+import {
+  StudentRootStackParamList,
+} from "../../types";
 
 type Props = NativeStackScreenProps<
-  StudentStackParamList,
+  StudentRootStackParamList,
   "EventDetails"
 >;
 
 export default function EventDetailsScreen({
   route,
 }: Props) {
+  const registeredEventIds =
+    useRegistrationStore(
+      (state) =>
+        state.registeredEventIds
+    );
+
+  const registerEvent =
+    useRegistrationStore(
+      (state) => state.registerEvent
+    );
+
+  const cancelRegistration =
+    useRegistrationStore(
+      (state) =>
+        state.cancelRegistration
+    );
+
   const event = EVENTS.find(
     (item) =>
       item.id === route.params.eventId
@@ -38,8 +67,86 @@ export default function EventDetailsScreen({
     );
   }
 
-  const availableSeats =
-    event.capacity - event.registered;
+  const registered =
+    registeredEventIds.includes(event.id);
+
+  const registeredCount =
+    event.registered +
+    (registered ? 1 : 0);
+
+  const availableSeats = Math.max(
+    event.capacity - registeredCount,
+    0
+  );
+
+  const eventFull =
+    availableSeats === 0 &&
+    !registered;
+
+  const handleRegistration = () => {
+    if (registered) {
+      Alert.alert(
+        "Cancel Registration",
+        `Do you want to cancel your registration for ${event.title}?`,
+        [
+          {
+            text: "Keep Registration",
+            style: "cancel",
+          },
+          {
+            text: "Cancel Registration",
+            style: "destructive",
+            onPress: () => {
+              cancelRegistration(event.id);
+
+              Alert.alert(
+                "Registration Cancelled",
+                "The event has been removed from My Events."
+              );
+            },
+          },
+        ]
+      );
+
+      return;
+    }
+
+    const result = registerEvent(event.id);
+
+    if (result === "registered") {
+      Alert.alert(
+        "Registration Successful",
+        `${event.title} has been added to My Events.`
+      );
+
+      return;
+    }
+
+    if (
+      result === "already_registered"
+    ) {
+      Alert.alert(
+        "Already Registered",
+        "This event is already in My Events."
+      );
+
+      return;
+    }
+
+    if (result === "event_full") {
+      Alert.alert(
+        "Event Full",
+        "No seats are currently available."
+      );
+
+      return;
+    }
+
+    Alert.alert(
+      "Unable to Register",
+      "The selected event could not be found."
+    );
+  };
 
   return (
     <SafeAreaView
@@ -72,6 +179,20 @@ export default function EventDetailsScreen({
           Organized by {event.organizerName}
         </Text>
 
+        {registered ? (
+          <View style={styles.registeredBanner}>
+            <Ionicons
+              name="checkmark-circle"
+              size={21}
+              color={colors.success}
+            />
+
+            <Text style={styles.registeredText}>
+              You are registered for this event
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.informationCard}>
           <InformationRow
             icon="calendar-outline"
@@ -94,7 +215,11 @@ export default function EventDetailsScreen({
           <InformationRow
             icon="people-outline"
             label="Availability"
-            value={`${availableSeats} of ${event.capacity} seats available`}
+            value={
+              availableSeats > 0
+                ? `${availableSeats} of ${event.capacity} seats available`
+                : "No seats available"
+            }
             isLast
           />
         </View>
@@ -108,25 +233,40 @@ export default function EventDetailsScreen({
         </Text>
 
         <Pressable
-          onPress={() =>
-            Alert.alert(
-              "Registration",
-              "Event registration will be added in the next feature."
-            )
-          }
+          onPress={handleRegistration}
+          disabled={eventFull}
           style={({ pressed }) => [
             styles.registerButton,
-            pressed && styles.pressed,
+
+            registered &&
+              styles.cancelButton,
+
+            eventFull &&
+              styles.disabledButton,
+
+            pressed &&
+              !eventFull &&
+              styles.pressed,
           ]}
         >
           <Ionicons
-            name="ticket-outline"
+            name={
+              registered
+                ? "close-circle-outline"
+                : eventFull
+                  ? "ban-outline"
+                  : "ticket-outline"
+            }
             size={21}
             color={colors.white}
           />
 
           <Text style={styles.registerText}>
-            Register for Event
+            {registered
+              ? "Cancel Registration"
+              : eventFull
+                ? "Event Full"
+                : "Register for Event"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -238,6 +378,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  registeredBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 17,
+    padding: 14,
+    gap: 9,
+    borderRadius: 14,
+    backgroundColor: "#EAF8F2",
+  },
+
+  registeredText: {
+    flex: 1,
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
   informationCard: {
     marginTop: 20,
     paddingHorizontal: 17,
@@ -309,6 +466,14 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 16,
     backgroundColor: colors.primary,
+  },
+
+  cancelButton: {
+    backgroundColor: colors.danger,
+  },
+
+  disabledButton: {
+    backgroundColor: colors.textSecondary,
   },
 
   registerText: {

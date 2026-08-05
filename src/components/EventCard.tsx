@@ -13,72 +13,129 @@ import { CampusEvent } from "../types";
 interface EventCardProps {
   event: CampusEvent;
   onPress: () => void;
+
+  actionLabel?: string;
+
+  actionIcon?: keyof typeof Ionicons.glyphMap;
+
+  actionTone?: "primary" | "danger";
+
+  onAction?: () => void;
 }
 
 export default function EventCard({
   event,
   onPress,
+  actionLabel,
+  actionIcon = "close-circle-outline",
+  actionTone = "primary",
+  onAction,
 }: EventCardProps) {
-  const availableSeats =
-    event.capacity - event.registered;
+  const availableSeats = Math.max(
+    event.capacity - event.registered,
+    0
+  );
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.poster}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>
-            {event.category}
-          </Text>
+    <View style={styles.card}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.mainContent,
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={styles.poster}>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>
+              {event.category}
+            </Text>
+          </View>
+
+          <Ionicons
+            name="calendar"
+            size={52}
+            color={colors.primary}
+          />
         </View>
 
-        <Ionicons
-          name="calendar"
-          size={52}
-          color={colors.primary}
-        />
-      </View>
-
-      <View style={styles.content}>
-        <Text
-          style={styles.title}
-          numberOfLines={2}
-        >
-          {event.title}
-        </Text>
-
-        <InformationRow
-          icon="calendar-outline"
-          value={event.date}
-        />
-
-        <InformationRow
-          icon="time-outline"
-          value={event.time}
-        />
-
-        <InformationRow
-          icon="location-outline"
-          value={event.venue}
-        />
-
-        <View style={styles.footer}>
+        <View style={styles.content}>
           <Text
-            style={[
-              styles.seats,
-              availableSeats <= 10 &&
-                styles.lowSeats,
-            ]}
+            style={styles.title}
+            numberOfLines={2}
           >
-            {availableSeats} seats available
+            {event.title}
           </Text>
 
-          <View style={styles.details}>
+          <InformationRow
+            icon="calendar-outline"
+            value={event.date}
+          />
+
+          <InformationRow
+            icon="time-outline"
+            value={event.time}
+          />
+
+          <InformationRow
+            icon="location-outline"
+            value={event.venue}
+          />
+        </View>
+      </Pressable>
+
+      <View style={styles.footer}>
+        <Text
+          style={[
+            styles.seats,
+            availableSeats <= 10 &&
+              styles.lowSeats,
+          ]}
+        >
+          {availableSeats > 0
+            ? `${availableSeats} seats available`
+            : "Event is full"}
+        </Text>
+
+        <View style={styles.footerActions}>
+          {onAction && actionLabel ? (
+            <Pressable
+              onPress={onAction}
+              style={({ pressed }) => [
+                styles.actionButton,
+                actionTone === "danger" &&
+                  styles.dangerActionButton,
+                pressed &&
+                  styles.actionPressed,
+              ]}
+            >
+              <Ionicons
+                name={actionIcon}
+                size={16}
+                color={
+                  actionTone === "danger"
+                    ? colors.danger
+                    : colors.primary
+                }
+              />
+
+              <Text
+                style={[
+                  styles.actionText,
+                  actionTone === "danger" &&
+                    styles.dangerActionText,
+                ]}
+              >
+                {actionLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={onPress}
+            style={styles.detailsButton}
+            hitSlop={8}
+          >
             <Text style={styles.detailsText}>
               Details
             </Text>
@@ -88,10 +145,10 @@ export default function EventCard({
               size={17}
               color={colors.primary}
             />
-          </View>
+          </Pressable>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -132,9 +189,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
+  mainContent: {
+    backgroundColor: colors.surface,
+  },
+
   pressed: {
     opacity: 0.86,
-    transform: [{ scale: 0.99 }],
   },
 
   poster: {
@@ -162,6 +222,7 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 16,
+    paddingBottom: 10,
   },
 
   title: {
@@ -188,15 +249,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 9,
-    paddingTop: 12,
+    minHeight: 58,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
 
   seats: {
+    flex: 1,
     color: colors.success,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
 
@@ -204,7 +266,13 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
 
-  details: {
+  footerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  detailsButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -214,5 +282,33 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: "800",
+  },
+
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    gap: 4,
+    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+  },
+
+  dangerActionButton: {
+    backgroundColor: "#FFF1F1",
+  },
+
+  actionText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  dangerActionText: {
+    color: colors.danger,
+  },
+
+  actionPressed: {
+    opacity: 0.7,
   },
 });

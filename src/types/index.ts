@@ -20,8 +20,8 @@ export interface CampusEvent {
   organizerName: string;
 }
 
-export type StudentStackParamList = {
-  Home: undefined;
+export type StudentRootStackParamList = {
+  MainTabs: undefined;
   EventDetails: {
     eventId: string;
   };

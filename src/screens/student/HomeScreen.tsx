@@ -12,26 +12,47 @@ import {
 } from "react";
 
 import { Ionicons } from "@expo/vector-icons";
+
+import {
+  useNavigation,
+} from "@react-navigation/native";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
+
 import { SafeAreaView } from "react-native-safe-area-context";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import EventCard from "../../components/EventCard";
 import { EVENTS } from "../../data/events";
 import { useAuthStore } from "../../store/authStore";
+
+import {
+  useRegistrationStore,
+} from "../../store/registrationStore";
+
 import { colors } from "../../theme/colors";
-import { StudentStackParamList } from "../../types";
 
-type Props = NativeStackScreenProps<
-  StudentStackParamList,
-  "Home"
->;
+import {
+  StudentRootStackParamList,
+} from "../../types";
 
-export default function HomeScreen({
-  navigation,
-}: Props) {
+type NavigationProp =
+  NativeStackNavigationProp<StudentRootStackParamList>;
+
+export default function HomeScreen() {
+  const navigation =
+    useNavigation<NavigationProp>();
+
   const user = useAuthStore(
     (state) => state.user
   );
+
+  const registeredEventIds =
+    useRegistrationStore(
+      (state) =>
+        state.registeredEventIds
+    );
 
   const [search, setSearch] = useState("");
 
@@ -40,12 +61,25 @@ export default function HomeScreen({
       .trim()
       .toLowerCase();
 
+    const eventsWithRegistration =
+      EVENTS.map((event) => ({
+        ...event,
+
+        registered:
+          event.registered +
+          (registeredEventIds.includes(
+            event.id
+          )
+            ? 1
+            : 0),
+      }));
+
     if (!query) {
-      return EVENTS;
+      return eventsWithRegistration;
     }
 
-    return EVENTS.filter((event) => {
-      return (
+    return eventsWithRegistration.filter(
+      (event) =>
         event.title
           .toLowerCase()
           .includes(query) ||
@@ -55,9 +89,8 @@ export default function HomeScreen({
         event.venue
           .toLowerCase()
           .includes(query)
-      );
-    });
-  }, [search]);
+    );
+  }, [search, registeredEventIds]);
 
   return (
     <SafeAreaView style={styles.container}>
