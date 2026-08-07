@@ -9,6 +9,7 @@ import {
 
 import {
   AuthUser,
+  RegistrationFormValues,
   UserRole,
 } from "../types";
 
@@ -19,6 +20,8 @@ interface AuthState {
     email: string,
     role: UserRole
   ) => void;
+
+  register: (values: RegistrationFormValues) => void;
 
   updateProfile: (
     values: Partial<
@@ -118,6 +121,28 @@ export const useAuthStore =
           );
 
           set({ user });
+        },
+
+        register: (values) => {
+          const now = new Date().toISOString();
+          const cleanEmail = values.email.trim().toLowerCase();
+
+          set({
+            user: {
+              id: createStableUserId(cleanEmail, values.role),
+              fullName: values.fullName.trim(),
+              email: cleanEmail,
+              role: values.role,
+              collegeId: values.collegeId.trim(),
+              program: values.program.trim(),
+              semester: values.semester,
+              phone: values.phone.trim(),
+              profileImageUrl: null,
+              isVerified: false,
+              status: "active",
+              createdAt: now,
+            },
+          });
         },
 
         updateProfile: (values) => {

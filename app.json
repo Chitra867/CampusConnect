@@ -2,6 +2,7 @@
   "expo": {
     "name": "CampusConnect",
     "slug": "CampusConnect",
+    "owner": "chitra2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.chitra2.campusconnect",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,6 +26,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eb4703c7-7f3a-4337-a59f-25e6fef2f1c6"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

@@ -3,8 +3,10 @@ import {
 } from "@react-navigation/native-stack";
 
 import LoginScreen from "../screens/auth/LoginScreen";
+import RegisterScreen from "../screens/auth/RegisterScreen";
+import { AuthStackParamList } from "../types";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthNavigator() {
   return (
@@ -17,6 +19,10 @@ export default function AuthNavigator() {
       <Stack.Screen
         name="Login"
         component={LoginScreen}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
       />
     </Stack.Navigator>
   );

@@ -25,6 +25,21 @@ export interface AuthUser {
   createdAt: string;
 }
 
+export interface RegistrationFormValues {
+  fullName: string;
+  email: string;
+  role: UserRole;
+  collegeId: string;
+  program: string;
+  semester: number | null;
+  phone: string;
+}
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+};
+
 export type EventStatus =
   | "draft"
   | "published"
