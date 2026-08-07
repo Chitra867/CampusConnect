@@ -44,18 +44,28 @@ export default function OrganizerDashboardScreen() {
     (state) => state.events
   );
 
-  const registeredEventIds =
+  const registrations =
     useRegistrationStore(
-      (state) => state.registeredEventIds
+      (state) => state.registrations
     );
+
+  const activeRegistrationCounts = registrations.reduce<Record<string, number>>(
+    (counts, registration) => {
+      if (registration.status === "registered") {
+        counts[registration.eventId] =
+          (counts[registration.eventId] ?? 0) + 1;
+      }
+
+      return counts;
+    },
+    {}
+  );
 
   const totalRegistrations = events.reduce(
     (total, event) =>
       total +
       event.registered +
-      (registeredEventIds.includes(event.id)
-        ? 1
-        : 0),
+      (activeRegistrationCounts[event.id] ?? 0),
     0
   );
 
@@ -80,9 +90,7 @@ export default function OrganizerDashboardScreen() {
   ) => {
     return (
       event.registered +
-      (registeredEventIds.includes(event.id)
-        ? 1
-        : 0)
+      (activeRegistrationCounts[event.id] ?? 0)
     );
   };
 

@@ -38,17 +38,9 @@ export interface CampusEvent {
   category: string;
   venue: string;
 
-  /*
-   * These fields are preserved so your current
-   * screens continue working.
-   */
   date: string;
   time: string;
 
-  /*
-   * Optional fields prepare the project for
-   * date/time pickers and Supabase.
-   */
   endDate?: string;
   endTime?: string;
   registrationDeadline?: string;
@@ -57,9 +49,10 @@ export interface CampusEvent {
 
   capacity: number;
 
-  /*
-   * Existing sample/base registration count.
-   * Real local registrations are stored separately.
+  /**
+   * Base registration count used by the initial
+   * sample events. New local registrations are
+   * stored separately in registrationStore.
    */
   registered: number;
 
@@ -94,7 +87,10 @@ export interface EventFormValues {
   clubId?: string | null;
   posterUrl?: string | null;
 
-  status?: "draft" | "published";
+  status?: Extract<
+    EventStatus,
+    "draft" | "published"
+  >;
 }
 
 export type RegistrationStatus =
@@ -127,13 +123,23 @@ export interface EventRegistration {
   checkedInBy: string | null;
 }
 
+/* =========================================================
+   STUDENT NAVIGATION
+========================================================= */
+
 export type StudentRootStackParamList = {
   MainTabs: undefined;
 
   EventDetails: {
     eventId: string;
   };
+
+  Notifications: undefined;
 };
+
+/* =========================================================
+   ORGANIZER NAVIGATION
+========================================================= */
 
 export type OrganizerRootStackParamList = {
   OrganizerMainTabs: undefined;

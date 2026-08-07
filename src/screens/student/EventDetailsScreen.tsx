@@ -1,5 +1,6 @@
 import {
   Alert,
+  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
+import { usePreferenceStore } from "../../store/preferenceStore";
 
 import {
   useRegistrationStore,
@@ -59,6 +61,15 @@ export default function EventDetailsScreen({
       (state) =>
         state.cancelRegistration
     );
+
+  const bookmarkedEventIds = usePreferenceStore(
+    (state) => state.bookmarkedEventIds
+  );
+  const reminderEventIds = usePreferenceStore(
+    (state) => state.reminderEventIds
+  );
+  const toggleBookmark = usePreferenceStore((state) => state.toggleBookmark);
+  const toggleReminder = usePreferenceStore((state) => state.toggleReminder);
 
   const event = events.find(
     (item) =>
@@ -107,6 +118,12 @@ export default function EventDetailsScreen({
 
   const eventUnavailable =
     event.status !== "published";
+
+  const registrationClosed = Boolean(
+    event.registrationDeadline &&
+      !Number.isNaN(new Date(event.registrationDeadline).getTime()) &&
+      new Date(event.registrationDeadline).getTime() < Date.now()
+  );
 
   const eventFull =
     availableSeats === 0 &&
@@ -185,6 +202,13 @@ export default function EventDetailsScreen({
         );
         return;
 
+      case "registration_closed":
+        Alert.alert(
+          "Registration Closed",
+          "The registration deadline for this event has passed."
+        );
+        return;
+
       case "not_authenticated":
         Alert.alert(
           "Login Required",
@@ -217,11 +241,18 @@ export default function EventDetailsScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.poster}>
+        <ImageBackground
+          source={event.posterUrl ? { uri: event.posterUrl } : undefined}
+          imageStyle={styles.posterImage}
+          style={styles.poster}
+        >
+          {event.posterUrl ? <View style={styles.posterOverlay} /> : null}
+          <View style={styles.posterOrbLarge} />
+          <View style={styles.posterOrbSmall} />
           <Ionicons
-            name="calendar"
-            size={78}
-            color={colors.primary}
+            name="sparkles"
+            size={68}
+            color={colors.white}
           />
 
           <View style={styles.categoryBadge}>
@@ -229,7 +260,7 @@ export default function EventDetailsScreen({
               {event.category}
             </Text>
           </View>
-        </View>
+        </ImageBackground>
 
         <Text style={styles.title}>
           {event.title}
@@ -238,6 +269,43 @@ export default function EventDetailsScreen({
         <Text style={styles.organizer}>
           Organized by {event.organizerName}
         </Text>
+
+        <View style={styles.quickActions}>
+          <Pressable
+            onPress={() => toggleBookmark(event.id)}
+            style={[
+              styles.quickAction,
+              bookmarkedEventIds.includes(event.id) && styles.activeQuickAction,
+            ]}
+          >
+            <Ionicons
+              name={bookmarkedEventIds.includes(event.id) ? "bookmark" : "bookmark-outline"}
+              size={19}
+              color={colors.primary}
+            />
+            <Text style={styles.quickActionText}>
+              {bookmarkedEventIds.includes(event.id) ? "Saved" : "Save"}
+            </Text>
+          </Pressable>
+          {registered ? (
+            <Pressable
+              onPress={() => toggleReminder(event.id)}
+              style={[
+                styles.quickAction,
+                reminderEventIds.includes(event.id) && styles.activeQuickAction,
+              ]}
+            >
+              <Ionicons
+                name={reminderEventIds.includes(event.id) ? "notifications" : "notifications-outline"}
+                size={19}
+                color={colors.primary}
+              />
+              <Text style={styles.quickActionText}>
+                {reminderEventIds.includes(event.id) ? "Reminder on" : "Remind me"}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {registered ? (
           <View style={styles.registeredBanner}>
@@ -317,6 +385,7 @@ export default function EventDetailsScreen({
           disabled={
             !registered &&
             (eventUnavailable ||
+              registrationClosed ||
               eventFull)
           }
           style={({ pressed }) => [
@@ -327,6 +396,7 @@ export default function EventDetailsScreen({
 
             !registered &&
               (eventUnavailable ||
+                registrationClosed ||
                 eventFull) &&
               styles.disabledButton,
 
@@ -339,6 +409,7 @@ export default function EventDetailsScreen({
               registered
                 ? "close-circle-outline"
                 : eventUnavailable ||
+                    registrationClosed ||
                     eventFull
                   ? "ban-outline"
                   : "ticket-outline"
@@ -352,6 +423,8 @@ export default function EventDetailsScreen({
               ? "Cancel Registration"
               : eventUnavailable
                 ? "Event Unavailable"
+                : registrationClosed
+                  ? "Registration Closed"
                 : eventFull
                   ? "Event Full"
                   : "Register for Event"}
@@ -428,11 +501,42 @@ const styles = StyleSheet.create({
   },
 
   poster: {
+    position: "relative",
     height: 215,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 25,
-    backgroundColor: colors.primarySoft,
+    overflow: "hidden",
+    backgroundColor: "#33268F",
+  },
+
+  posterOrbLarge: {
+    position: "absolute",
+    top: -70,
+    right: -35,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: "#6755D9",
+  },
+
+  posterImage: {
+    borderRadius: 25,
+  },
+
+  posterOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(23, 17, 75, 0.42)",
+  },
+
+  posterOrbSmall: {
+    position: "absolute",
+    bottom: -55,
+    left: -20,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "#4A3BB1",
   },
 
   categoryBadge: {
@@ -463,6 +567,35 @@ const styles = StyleSheet.create({
     marginTop: 7,
     color: colors.textSecondary,
     fontSize: 14,
+  },
+
+  quickActions: {
+    flexDirection: "row",
+    marginTop: 16,
+    gap: 10,
+  },
+
+  quickAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 7,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+  },
+
+  activeQuickAction: {
+    borderColor: "#CEC8FF",
+    backgroundColor: colors.primarySoft,
+  },
+
+  quickActionText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
   },
 
   registeredBanner: {

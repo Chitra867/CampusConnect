@@ -1,5 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
-
 import {
   NavigationContainer,
 } from "@react-navigation/native";
@@ -12,10 +10,13 @@ import {
   createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 
+import ModernTabBar from "../components/navigation/ModernTabBar";
+
 import AuthNavigator from "./AuthNavigator";
 
 import ProfileScreen from "../screens/common/ProfileScreen";
 
+import EventParticipantsScreen from "../screens/organizer/EventParticipantsScreen";
 import ManageEventsScreen from "../screens/organizer/ManageEventsScreen";
 import OrganizerDashboardScreen from "../screens/organizer/OrganizerDashboardScreen";
 import OrganizerEventDetailsScreen from "../screens/organizer/OrganizerEventDetailsScreen";
@@ -25,14 +26,20 @@ import OrganizerProfileScreen from "../screens/organizer/OrganizerProfileScreen"
 import EventDetailsScreen from "../screens/student/EventDetailsScreen";
 import HomeScreen from "../screens/student/HomeScreen";
 import MyEventsScreen from "../screens/student/MyEventsScreen";
+import NotificationsScreen from "../screens/student/NotificationsScreen";
+import SavedEventsScreen from "../screens/student/SavedEventsScreen";
 
 import { useAuthStore } from "../store/authStore";
-import { colors } from "../theme/colors";
 
 import {
   OrganizerRootStackParamList,
   StudentRootStackParamList,
 } from "../types";
+
+const navigationColors = {
+  background: "#F7F8FC",
+  text: "#222329",
+};
 
 const StudentRootStack =
   createNativeStackNavigator<StudentRootStackParamList>();
@@ -49,67 +56,17 @@ const OrganizerTab =
 /* =========================================================
    STUDENT BOTTOM TABS
 ========================================================= */
+
 function StudentTabs() {
   return (
     <StudentTab.Navigator
       id="StudentTabs"
-      screenOptions={({ route }) => ({
+      tabBar={(props) => (
+        <ModernTabBar {...props} />
+      )}
+      screenOptions={{
         headerShown: false,
-
-        tabBarActiveTintColor:
-          colors.primary,
-
-        tabBarInactiveTintColor:
-          colors.textSecondary,
-
-        tabBarStyle: {
-          height: 68,
-          paddingTop: 7,
-          paddingBottom: 8,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.surface,
-        },
-
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
-        },
-
-        tabBarIcon: ({
-          color,
-          size,
-          focused,
-        }) => {
-          const icons: Record<
-            string,
-            keyof typeof Ionicons.glyphMap
-          > = {
-            Home: focused
-              ? "home"
-              : "home-outline",
-
-            MyEvents: focused
-              ? "calendar"
-              : "calendar-outline",
-
-            Profile: focused
-              ? "person"
-              : "person-outline",
-          };
-
-          return (
-            <Ionicons
-              name={
-                icons[route.name] ??
-                "ellipse-outline"
-              }
-              size={size}
-              color={color}
-            />
-          );
-        },
-      })}
+      }}
     >
       <StudentTab.Screen
         name="Home"
@@ -123,7 +80,15 @@ function StudentTabs() {
         name="MyEvents"
         component={MyEventsScreen}
         options={{
-          tabBarLabel: "My Events",
+          tabBarLabel: "Schedule",
+        }}
+      />
+
+      <StudentTab.Screen
+        name="Saved"
+        component={SavedEventsScreen}
+        options={{
+          tabBarLabel: "Saved",
         }}
       />
 
@@ -141,6 +106,7 @@ function StudentTabs() {
 /* =========================================================
    STUDENT ROOT STACK
 ========================================================= */
+
 function StudentNavigator() {
   return (
     <StudentRootStack.Navigator
@@ -160,13 +126,30 @@ function StudentNavigator() {
         options={{
           title: "Event Details",
           headerShadowVisible: false,
-          headerTintColor: colors.text,
+          headerTintColor:
+            navigationColors.text,
 
           headerStyle: {
             backgroundColor:
-              colors.background,
+              navigationColors.background,
           },
 
+          headerTitleStyle: {
+            fontWeight: "800",
+          },
+        }}
+      />
+
+      <StudentRootStack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          title: "Notifications",
+          headerShadowVisible: false,
+          headerTintColor: navigationColors.text,
+          headerStyle: {
+            backgroundColor: navigationColors.background,
+          },
           headerTitleStyle: {
             fontWeight: "800",
           },
@@ -179,67 +162,17 @@ function StudentNavigator() {
 /* =========================================================
    ORGANIZER BOTTOM TABS
 ========================================================= */
+
 function OrganizerTabs() {
   return (
     <OrganizerTab.Navigator
       id="OrganizerTabs"
-      screenOptions={({ route }) => ({
+      tabBar={(props) => (
+        <ModernTabBar {...props} />
+      )}
+      screenOptions={{
         headerShown: false,
-
-        tabBarActiveTintColor:
-          colors.primary,
-
-        tabBarInactiveTintColor:
-          colors.textSecondary,
-
-        tabBarStyle: {
-          height: 68,
-          paddingTop: 7,
-          paddingBottom: 8,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.surface,
-        },
-
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
-        },
-
-        tabBarIcon: ({
-          color,
-          size,
-          focused,
-        }) => {
-          const icons: Record<
-            string,
-            keyof typeof Ionicons.glyphMap
-          > = {
-            Dashboard: focused
-              ? "grid"
-              : "grid-outline",
-
-            ManageEvents: focused
-              ? "calendar"
-              : "calendar-outline",
-
-            Profile: focused
-              ? "person"
-              : "person-outline",
-          };
-
-          return (
-            <Ionicons
-              name={
-                icons[route.name] ??
-                "ellipse-outline"
-              }
-              size={size}
-              color={color}
-            />
-          );
-        },
-      })}
+      }}
     >
       <OrganizerTab.Screen
         name="Dashboard"
@@ -261,7 +194,9 @@ function OrganizerTabs() {
 
       <OrganizerTab.Screen
         name="Profile"
-        component={OrganizerProfileScreen}
+        component={
+          OrganizerProfileScreen
+        }
         options={{
           tabBarLabel: "Profile",
         }}
@@ -273,6 +208,7 @@ function OrganizerTabs() {
 /* =========================================================
    ORGANIZER ROOT STACK
 ========================================================= */
+
 function OrganizerNavigator() {
   return (
     <OrganizerRootStack.Navigator
@@ -294,11 +230,12 @@ function OrganizerNavigator() {
         options={{
           title: "Event Details",
           headerShadowVisible: false,
-          headerTintColor: colors.text,
+          headerTintColor:
+            navigationColors.text,
 
           headerStyle: {
             backgroundColor:
-              colors.background,
+              navigationColors.background,
           },
 
           headerTitleStyle: {
@@ -309,18 +246,21 @@ function OrganizerNavigator() {
 
       <OrganizerRootStack.Screen
         name="OrganizerEventForm"
-        component={OrganizerEventFormScreen}
+        component={
+          OrganizerEventFormScreen
+        }
         options={({ route }) => ({
           title: route.params?.eventId
             ? "Edit Event"
             : "Create Event",
 
           headerShadowVisible: false,
-          headerTintColor: colors.text,
+          headerTintColor:
+            navigationColors.text,
 
           headerStyle: {
             backgroundColor:
-              colors.background,
+              navigationColors.background,
           },
 
           headerTitleStyle: {
@@ -328,13 +268,36 @@ function OrganizerNavigator() {
           },
         })}
       />
+
+      <OrganizerRootStack.Screen
+        name="OrganizerParticipants"
+        component={
+          EventParticipantsScreen
+        }
+        options={{
+          title: "Participants",
+          headerShadowVisible: false,
+          headerTintColor:
+            navigationColors.text,
+
+          headerStyle: {
+            backgroundColor:
+              navigationColors.background,
+          },
+
+          headerTitleStyle: {
+            fontWeight: "800",
+          },
+        }}
+      />
     </OrganizerRootStack.Navigator>
   );
 }
 
 /* =========================================================
-   ROOT NAVIGATOR
+   APPLICATION ROOT NAVIGATOR
 ========================================================= */
+
 export default function RootNavigator() {
   const user = useAuthStore(
     (state) => state.user

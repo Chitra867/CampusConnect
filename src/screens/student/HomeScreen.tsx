@@ -1,6 +1,8 @@
 import {
   FlatList,
+  ImageBackground,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -24,16 +26,13 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import EventCard from "../../components/EventCard";
-
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
+import { usePreferenceStore } from "../../store/preferenceStore";
 
 import {
   useRegistrationStore,
 } from "../../store/registrationStore";
-
-import { colors } from "../../theme/colors";
 
 import {
   CampusEvent,
@@ -42,6 +41,94 @@ import {
 
 type NavigationProp =
   NativeStackNavigationProp<StudentRootStackParamList>;
+
+const palette = {
+  navy: "#111378",
+  purple: "#A66BFA",
+  purpleDark: "#7043CE",
+  purpleSoft: "#EEE7FF",
+  background: "#F7F8FC",
+  surface: "#FFFFFF",
+  text: "#222329",
+  secondary: "#737583",
+  border: "#E7E7EF",
+  orange: "#FF6B3D",
+  success: "#21885E",
+  white: "#FFFFFF",
+};
+
+const CATEGORY_IMAGES: Record<
+  string,
+  string
+> = {
+  technology:
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85",
+
+  workshop:
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85",
+
+  arts:
+    "https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=900&q=85",
+
+  cultural:
+    "https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=900&q=85",
+
+  sports:
+    "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=85",
+
+  career:
+    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85",
+
+  competition:
+    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85",
+};
+
+const DEFAULT_EVENT_IMAGE =
+  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=85";
+
+function getEventImage(
+  event: CampusEvent
+): string {
+  if (event.posterUrl) {
+    return event.posterUrl;
+  }
+
+  const category =
+    event.category.trim().toLowerCase();
+
+  return (
+    CATEGORY_IMAGES[category] ??
+    DEFAULT_EVENT_IMAGE
+  );
+}
+
+function getShortDate(dateValue: string): {
+  month: string;
+  day: string;
+} {
+  const parsedDate = new Date(dateValue);
+
+  if (
+    Number.isNaN(parsedDate.getTime())
+  ) {
+    return {
+      month: "EVENT",
+      day: "--",
+    };
+  }
+
+  return {
+    month: parsedDate
+      .toLocaleDateString("en-US", {
+        month: "short",
+      })
+      .toUpperCase(),
+
+    day: parsedDate
+      .getDate()
+      .toString(),
+  };
+}
 
 export default function HomeScreen() {
   const navigation =
@@ -63,37 +150,124 @@ export default function HomeScreen() {
   const [search, setSearch] =
     useState("");
 
+  const [
+    selectedCategory,
+    setSelectedCategory,
+  ] = useState("All");
+
+  const [
+    selectedClub,
+    setSelectedClub,
+  ] = useState<string | null>(null);
+
+  const bookmarkedIds = usePreferenceStore(
+    (state) => state.bookmarkedEventIds
+  );
+
+  const toggleBookmark = usePreferenceStore(
+    (state) => state.toggleBookmark
+  );
+
+  const categories = useMemo(() => {
+    const uniqueCategories =
+      Array.from(
+        new Set(
+          events.map(
+            (event) => event.category
+          )
+        )
+      );
+
+    return [
+      "All",
+      ...uniqueCategories,
+    ];
+  }, [events]);
+
+  const clubs = useMemo(() => {
+    return Array.from(
+      new Set(
+        events.map(
+          (event) =>
+            event.organizerName
+        )
+      )
+    );
+  }, [events]);
+
+  const registrationCountMap =
+    useMemo(() => {
+      return registrations.reduce<
+        Record<string, number>
+      >((counts, registration) => {
+        if (
+          registration.status !==
+          "registered"
+        ) {
+          return counts;
+        }
+
+        counts[registration.eventId] =
+          (counts[
+            registration.eventId
+          ] ?? 0) + 1;
+
+        return counts;
+      }, {});
+    }, [registrations]);
+
   const filteredEvents =
     useMemo<CampusEvent[]>(() => {
-      const query = search
+      const normalizedSearch = search
         .trim()
         .toLowerCase();
 
-      const registrationCountMap =
-        registrations.reduce<
-          Record<string, number>
-        >((counts, registration) => {
-          if (
-            registration.status !==
-            "registered"
-          ) {
-            return counts;
-          }
-
-          counts[registration.eventId] =
-            (counts[
-              registration.eventId
-            ] ?? 0) + 1;
-
-          return counts;
-        }, {});
-
-      const publishedEvents = events
+      return events
         .filter(
           (event) =>
             event.status ===
             "published"
         )
+        .filter((event) => {
+          const matchesCategory =
+            selectedCategory === "All" ||
+            event.category ===
+              selectedCategory;
+
+          const matchesClub =
+            !selectedClub ||
+            event.organizerName ===
+              selectedClub;
+
+          const matchesSearch =
+            !normalizedSearch ||
+            event.title
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            event.category
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            event.venue
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            event.organizerName
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              );
+
+          return (
+            matchesCategory &&
+            matchesClub &&
+            matchesSearch
+          );
+        })
         .map((event) => ({
           ...event,
 
@@ -103,110 +277,99 @@ export default function HomeScreen() {
               event.id
             ] ?? 0),
         }));
-
-      if (!query) {
-        return publishedEvents;
-      }
-
-      return publishedEvents.filter(
-        (event) =>
-          event.title
-            .toLowerCase()
-            .includes(query) ||
-          event.category
-            .toLowerCase()
-            .includes(query) ||
-          event.venue
-            .toLowerCase()
-            .includes(query) ||
-          event.organizerName
-            .toLowerCase()
-            .includes(query)
-      );
     }, [
       events,
-      registrations,
       search,
+      selectedCategory,
+      selectedClub,
+      registrationCountMap,
     ]);
 
+  const featuredEvent =
+    filteredEvents[0];
+
+  const recommendationEvents =
+    filteredEvents.slice(1, 3);
+
+  const upcomingEvents =
+    filteredEvents.slice(3);
+
+  const navigateToEvent = (
+    eventId: string
+  ) => {
+    navigation.navigate(
+      "EventDetails",
+      {
+        eventId,
+      }
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
       <FlatList
-        data={filteredEvents}
+        data={upcomingEvents}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.content}
+        contentContainerStyle={
+          styles.content
+        }
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <View style={styles.headerContent}>
-                <Text style={styles.welcome}>
-                  Welcome back
-                </Text>
+            <View style={styles.topHeader}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open menu"
+                style={styles.headerIconButton}
+              >
+                <Ionicons
+                  name="menu"
+                  size={29}
+                  color={palette.navy}
+                />
+              </Pressable>
 
-                <Text
-                  style={styles.name}
-                  numberOfLines={1}
-                >
-                  {user?.fullName ??
-                    "Campus Student"}
-                </Text>
-              </View>
+              <Text style={styles.brand}>
+                CampusConnect
+              </Text>
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="View notifications"
-                style={({ pressed }) => [
-                  styles.notification,
-                  pressed &&
-                    styles.pressed,
-                ]}
+                accessibilityLabel="Notifications"
+                onPress={() => navigation.navigate("Notifications")}
+                style={styles.notificationButton}
               >
                 <Ionicons
                   name="notifications-outline"
-                  size={23}
-                  color={colors.primary}
+                  size={25}
+                  color={palette.text}
+                />
+
+                <View
+                  style={styles.notificationDot}
                 />
               </Pressable>
             </View>
 
-            <View style={styles.hero}>
-              <View style={styles.heroContent}>
-                <Text style={styles.heroTitle}>
-                  Explore Campus Events
-                </Text>
-
-                <Text style={styles.heroText}>
-                  Discover workshops, seminars,
-                  competitions and club programs.
-                </Text>
-              </View>
-
-              <View style={styles.heroIcon}>
-                <Ionicons
-                  name="calendar"
-                  size={48}
-                  color={colors.white}
-                />
-              </View>
-            </View>
-
-            <View style={styles.searchBox}>
+            <View style={styles.searchContainer}>
               <Ionicons
                 name="search-outline"
-                size={21}
-                color={colors.textSecondary}
+                size={25}
+                color={palette.secondary}
               />
 
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search events, venue or club..."
+                placeholder="Search events, clubs, or venues..."
                 placeholderTextColor={
-                  colors.textSecondary
+                  palette.secondary
                 }
                 autoCorrect={false}
+                returnKeyType="search"
                 style={styles.searchInput}
               />
 
@@ -221,218 +384,868 @@ export default function HomeScreen() {
                 >
                   <Ionicons
                     name="close-circle"
-                    size={21}
+                    size={22}
                     color={
-                      colors.textSecondary
+                      palette.secondary
                     }
                   />
                 </Pressable>
               ) : null}
             </View>
 
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Upcoming Events
-              </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={
+                styles.categoryList
+              }
+            >
+              {categories.map(
+                (category) => {
+                  const selected =
+                    category ===
+                    selectedCategory;
 
-              <Text style={styles.eventCount}>
-                {filteredEvents.length}{" "}
-                {filteredEvents.length === 1
-                  ? "event"
-                  : "events"}
-              </Text>
-            </View>
+                  return (
+                    <Pressable
+                      key={category}
+                      onPress={() =>
+                        setSelectedCategory(
+                          category
+                        )
+                      }
+                      style={[
+                        styles.categoryChip,
+                        selected &&
+                          styles.selectedCategoryChip,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          selected &&
+                            styles.selectedCategoryChipText,
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </Pressable>
+                  );
+                }
+              )}
+            </ScrollView>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={
+                styles.clubList
+              }
+            >
+              {clubs.map((club) => {
+                const selected =
+                  club === selectedClub;
+
+                return (
+                  <Pressable
+                    key={club}
+                    onPress={() =>
+                      setSelectedClub(
+                        selected
+                          ? null
+                          : club
+                      )
+                    }
+                    style={[
+                      styles.clubChip,
+                      selected &&
+                        styles.selectedClubChip,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.clubChipText,
+                        selected &&
+                          styles.selectedClubChipText,
+                      ]}
+                    >
+                      {club}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <Text style={styles.mainHeading}>
+              For You
+            </Text>
+
+            {featuredEvent ? (
+              <FeaturedEventCard
+                event={featuredEvent}
+                onPress={() =>
+                  navigateToEvent(
+                    featuredEvent.id
+                  )
+                }
+              />
+            ) : null}
+
+            {recommendationEvents.map(
+              (event) => (
+                <CompactEventCard
+                  key={event.id}
+                  event={event}
+                  onPress={() =>
+                    navigateToEvent(
+                      event.id
+                    )
+                  }
+                />
+              )
+            )}
+
+            {filteredEvents.length >
+            0 ? (
+              <View
+                style={
+                  styles.upcomingHeader
+                }
+              >
+                <Text
+                  style={
+                    styles.upcomingHeading
+                  }
+                >
+                  Upcoming Events
+                </Text>
+
+                <Text
+                  style={styles.viewAllText}
+                >
+                  View All
+                </Text>
+              </View>
+            ) : null}
           </>
         }
         renderItem={({ item }) => (
-          <EventCard
+          <UpcomingEventRow
             event={item}
+            bookmarked={bookmarkedIds.includes(
+              item.id
+            )}
             onPress={() =>
-              navigation.navigate(
-                "EventDetails",
-                {
-                  eventId: item.id,
-                }
-              )
+              navigateToEvent(item.id)
+            }
+            onBookmark={() =>
+              toggleBookmark(item.id)
             }
           />
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="search-outline"
-                size={48}
-                color={colors.primary}
-              />
+          filteredEvents.length ===
+          0 ? (
+            <View style={styles.emptyState}>
+              <View
+                style={styles.emptyIcon}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={48}
+                  color={palette.purpleDark}
+                />
+              </View>
+
+              <Text style={styles.emptyTitle}>
+                No events found
+              </Text>
+
+              <Text
+                style={styles.emptyDescription}
+              >
+                Change your search, category or
+                club filter.
+              </Text>
+
+              <Pressable
+                onPress={() => {
+                  setSearch("");
+                  setSelectedCategory(
+                    "All"
+                  );
+                  setSelectedClub(null);
+                }}
+                style={styles.clearFiltersButton}
+              >
+                <Text
+                  style={
+                    styles.clearFiltersText
+                  }
+                >
+                  Clear Filters
+                </Text>
+              </Pressable>
             </View>
-
-            <Text style={styles.emptyTitle}>
-              No events found
-            </Text>
-
-            <Text style={styles.emptyDescription}>
-              Try another event title, category,
-              venue or organizer.
-            </Text>
-          </View>
+          ) : null
         }
       />
     </SafeAreaView>
   );
 }
 
+interface FeaturedEventCardProps {
+  event: CampusEvent;
+  onPress: () => void;
+}
+
+function FeaturedEventCard({
+  event,
+  onPress,
+}: FeaturedEventCardProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.featuredCard,
+        pressed && styles.pressed,
+      ]}
+    >
+      <ImageBackground
+        source={{
+          uri: getEventImage(event),
+        }}
+        resizeMode="cover"
+        style={styles.featuredImage}
+        imageStyle={
+          styles.featuredImageStyle
+        }
+      >
+        <View
+          style={styles.trendingBadge}
+        >
+          <Text
+            style={styles.trendingText}
+          >
+            Trending
+          </Text>
+        </View>
+      </ImageBackground>
+
+      <View
+        style={styles.featuredContent}
+      >
+        <View
+          style={styles.featuredMetadata}
+        >
+          <Text
+            style={styles.featuredClub}
+            numberOfLines={1}
+          >
+            {event.organizerName.toUpperCase()}
+          </Text>
+
+          <Text
+            style={styles.featuredDate}
+            numberOfLines={1}
+          >
+            {event.date} • {event.time}
+          </Text>
+        </View>
+
+        <Text
+          style={styles.featuredTitle}
+          numberOfLines={2}
+        >
+          {event.title}
+        </Text>
+
+        <Text
+          style={styles.featuredDescription}
+          numberOfLines={2}
+        >
+          {event.description}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+interface CompactEventCardProps {
+  event: CampusEvent;
+  onPress: () => void;
+}
+
+function CompactEventCard({
+  event,
+  onPress,
+}: CompactEventCardProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.compactCard,
+        pressed && styles.pressed,
+      ]}
+    >
+      <ImageBackground
+        source={{
+          uri: getEventImage(event),
+        }}
+        resizeMode="cover"
+        style={styles.compactImage}
+        imageStyle={
+          styles.compactImageStyle
+        }
+      />
+
+      <View
+        style={styles.compactContent}
+      >
+        <Text
+          style={styles.compactCategory}
+        >
+          {event.category.toUpperCase()}
+        </Text>
+
+        <Text
+          style={styles.compactTitle}
+          numberOfLines={2}
+        >
+          {event.title}
+        </Text>
+
+        <Text
+          style={styles.compactMetadata}
+          numberOfLines={1}
+        >
+          {event.date} • {event.venue}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+interface UpcomingEventRowProps {
+  event: CampusEvent;
+  bookmarked: boolean;
+  onPress: () => void;
+  onBookmark: () => void;
+}
+
+function UpcomingEventRow({
+  event,
+  bookmarked,
+  onPress,
+  onBookmark,
+}: UpcomingEventRowProps) {
+  const date = getShortDate(event.date);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.upcomingCard,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.dateBox}>
+        <Text style={styles.dateMonth}>
+          {date.month}
+        </Text>
+
+        <Text style={styles.dateDay}>
+          {date.day}
+        </Text>
+      </View>
+
+      <View
+        style={styles.upcomingContent}
+      >
+        <Text
+          style={styles.upcomingTitle}
+          numberOfLines={1}
+        >
+          {event.title}
+        </Text>
+
+        <Text
+          style={styles.upcomingMetadata}
+          numberOfLines={1}
+        >
+          {event.venue} • {event.time}
+        </Text>
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          bookmarked
+            ? "Remove bookmark"
+            : "Bookmark event"
+        }
+        onPress={(pressEvent) => {
+          pressEvent.stopPropagation();
+          onBookmark();
+        }}
+        style={[
+          styles.bookmarkButton,
+          bookmarked &&
+            styles.bookmarkedButton,
+        ]}
+      >
+        <Ionicons
+          name={
+            bookmarked
+              ? "bookmark"
+              : "bookmark-outline"
+          }
+          size={23}
+          color={
+            bookmarked
+              ? palette.purpleDark
+              : "#A6A7B5"
+          }
+        />
+      </Pressable>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: palette.background,
   },
 
   content: {
     flexGrow: 1,
-    paddingHorizontal: 18,
     paddingBottom: 28,
   },
 
-  header: {
+  topHeader: {
+    minHeight: 70,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+    backgroundColor: palette.background,
   },
 
-  headerContent: {
-    flex: 1,
-    paddingRight: 12,
-  },
-
-  welcome: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-
-  name: {
-    marginTop: 2,
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  notification: {
-    width: 46,
-    height: 46,
-    alignItems: "center",
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    alignItems: "flex-start",
     justifyContent: "center",
-    borderRadius: 15,
-    backgroundColor: colors.primarySoft,
   },
 
-  hero: {
-    minHeight: 150,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-    padding: 21,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-  },
-
-  heroContent: {
+  brand: {
     flex: 1,
-    paddingRight: 10,
-  },
-
-  heroTitle: {
-    color: colors.white,
-    fontSize: 22,
+    color: palette.navy,
+    fontSize: 25,
     fontWeight: "900",
+    textAlign: "center",
   },
 
-  heroText: {
-    marginTop: 8,
-    color: "#E9E6FF",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-
-  heroIcon: {
-    width: 76,
-    height: 76,
-    alignItems: "center",
+  notificationButton: {
+    width: 40,
+    height: 40,
+    alignItems: "flex-end",
     justifyContent: "center",
-    borderRadius: 24,
-    backgroundColor:
-      "rgba(255,255,255,0.15)",
   },
 
-  searchBox: {
-    minHeight: 52,
+  notificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 0,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: palette.background,
+    backgroundColor: palette.orange,
+  },
+
+  searchContainer: {
+    minHeight: 68,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 23,
-    paddingHorizontal: 15,
-    gap: 10,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    marginTop: 19,
+    marginHorizontal: 20,
+    paddingHorizontal: 20,
+    gap: 13,
+    borderRadius: 17,
+    backgroundColor: palette.surface,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   searchInput: {
     flex: 1,
-    color: colors.text,
-    fontSize: 15,
+    color: palette.text,
+    fontSize: 16,
   },
 
-  sectionHeader: {
-    flexDirection: "row",
+  categoryList: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 10,
+  },
+
+  categoryChip: {
+    minWidth: 92,
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
+    justifyContent: "center",
+    paddingHorizontal: 19,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: "#EDEEF2",
   },
 
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 20,
+  selectedCategoryChip: {
+    backgroundColor: palette.purple,
+  },
+
+  categoryChipText: {
+    color: "#535563",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  selectedCategoryChipText: {
+    color: "#50317D",
+  },
+
+  clubList: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    gap: 10,
+  },
+
+  clubChip: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 19,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: "#CBCBD9",
+    backgroundColor: palette.background,
+  },
+
+  selectedClubChip: {
+    borderColor: palette.purpleDark,
+    backgroundColor: palette.purpleSoft,
+  },
+
+  clubChipText: {
+    color: "#535563",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  selectedClubChipText: {
+    color: palette.purpleDark,
+  },
+
+  mainHeading: {
+    marginTop: 10,
+    marginBottom: 13,
+    marginHorizontal: 20,
+    color: palette.navy,
+    fontSize: 27,
     fontWeight: "900",
   },
 
-  eventCount: {
-    color: colors.textSecondary,
+  featuredCard: {
+    marginHorizontal: 20,
+    overflow: "hidden",
+    borderRadius: 24,
+    backgroundColor: palette.surface,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 13,
+    elevation: 5,
+  },
+
+  featuredImage: {
+    height: 250,
+    padding: 18,
+  },
+
+  featuredImageStyle: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+
+  trendingBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.92)",
+  },
+
+  trendingText: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  featuredContent: {
+    paddingHorizontal: 27,
+    paddingTop: 22,
+    paddingBottom: 27,
+  },
+
+  featuredMetadata: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+
+  featuredClub: {
+    flex: 1,
+    color: palette.navy,
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+
+  featuredDate: {
+    maxWidth: "52%",
+    color: palette.secondary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  featuredTitle: {
+    marginTop: 15,
+    color: palette.text,
+    fontSize: 25,
+    lineHeight: 32,
+    fontWeight: "900",
+  },
+
+  featuredDescription: {
+    marginTop: 13,
+    color: palette.secondary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  compactCard: {
+    minHeight: 154,
+    flexDirection: "row",
+    marginTop: 18,
+    marginHorizontal: 20,
+    overflow: "hidden",
+    borderRadius: 22,
+    backgroundColor: palette.surface,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  compactImage: {
+    width: 148,
+    minHeight: 154,
+  },
+
+  compactImageStyle: {
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
+  },
+
+  compactContent: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 19,
+    paddingVertical: 16,
+  },
+
+  compactCategory: {
+    color: palette.orange,
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+
+  compactTitle: {
+    marginTop: 8,
+    color: palette.text,
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: "900",
+  },
+
+  compactMetadata: {
+    marginTop: 7,
+    color: palette.secondary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  upcomingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 35,
+    marginBottom: 14,
+    marginHorizontal: 20,
+  },
+
+  upcomingHeading: {
+    color: palette.navy,
+    fontSize: 27,
+    fontWeight: "900",
+  },
+
+  viewAllText: {
+    color: palette.navy,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  upcomingCard: {
+    minHeight: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    marginHorizontal: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 18,
+    backgroundColor: palette.surface,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  dateBox: {
+    width: 70,
+    minHeight: 72,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor: "#E5DEFF",
+  },
+
+  dateMonth: {
+    color: palette.navy,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  dateDay: {
+    marginTop: 2,
+    color: palette.navy,
+    fontSize: 26,
+    fontWeight: "900",
+  },
+
+  upcomingContent: {
+    flex: 1,
+    marginLeft: 18,
+    paddingRight: 8,
+  },
+
+  upcomingTitle: {
+    color: palette.text,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  upcomingMetadata: {
+    marginTop: 7,
+    color: palette.secondary,
     fontSize: 13,
   },
 
-  empty: {
+  bookmarkButton: {
+    width: 52,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: "#CFCFDC",
+    backgroundColor: palette.surface,
+  },
+
+  bookmarkedButton: {
+    borderColor: palette.purple,
+    backgroundColor: palette.purpleSoft,
+  },
+
+  emptyState: {
     alignItems: "center",
     paddingHorizontal: 25,
-    paddingVertical: 55,
+    paddingTop: 70,
+    paddingBottom: 100,
   },
 
   emptyIcon: {
-    width: 92,
-    height: 92,
+    width: 94,
+    height: 94,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 30,
-    backgroundColor: colors.primarySoft,
+    borderRadius: 31,
+    backgroundColor: palette.purpleSoft,
   },
 
   emptyTitle: {
-    marginTop: 16,
-    color: colors.text,
-    fontSize: 19,
+    marginTop: 18,
+    color: palette.text,
+    fontSize: 20,
     fontWeight: "900",
   },
 
   emptyDescription: {
     marginTop: 7,
-    color: colors.textSecondary,
+    color: palette.secondary,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center",
   },
 
+  clearFiltersButton: {
+    marginTop: 19,
+    paddingHorizontal: 21,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: palette.purple,
+  },
+
+  clearFiltersText: {
+    color: palette.white,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
   pressed: {
-    opacity: 0.8,
+    opacity: 0.82,
   },
 });

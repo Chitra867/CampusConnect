@@ -9,19 +9,13 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import {
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEventStore } from "../../store/eventStore";
-
-import {
-  useRegistrationStore,
-} from "../../store/registrationStore";
-
-import { colors } from "../../theme/colors";
+import { useRegistrationStore } from "../../store/registrationStore";
+import { usePreferenceStore } from "../../store/preferenceStore";
 
 import {
   OrganizerRootStackParamList,
@@ -32,6 +26,25 @@ type Props = NativeStackScreenProps<
   "OrganizerEventDetails"
 >;
 
+const palette = {
+  navy: "#111378",
+  purple: "#A66BFA",
+  purpleDark: "#7043CE",
+  purpleSoft: "#EEE7FF",
+  background: "#F7F8FC",
+  surface: "#FFFFFF",
+  text: "#23242A",
+  secondary: "#737583",
+  border: "#E3E4EA",
+  success: "#23875F",
+  successSoft: "#E9F8F2",
+  danger: "#CC3C46",
+  dangerSoft: "#FFF0F1",
+  warning: "#B87812",
+  warningSoft: "#FFF5DF",
+  white: "#FFFFFF",
+};
+
 export default function OrganizerEventDetailsScreen({
   navigation,
   route,
@@ -40,20 +53,27 @@ export default function OrganizerEventDetailsScreen({
     (state) => state.events
   );
 
-  const setEventStatus =
-    useEventStore(
-      (state) => state.setEventStatus
-    );
+  const setEventStatus = useEventStore(
+    (state) => state.setEventStatus
+  );
 
   const deleteEvent = useEventStore(
     (state) => state.deleteEvent
   );
 
-  const cancelRegistration =
+  const registrations = useRegistrationStore(
+    (state) => state.registrations
+  );
+
+  const removeEventRegistrations =
     useRegistrationStore(
       (state) =>
-        state.cancelRegistration
+        state.removeEventRegistrations
     );
+
+  const removeEventPreferences = usePreferenceStore(
+    (state) => state.removeEventPreferences
+  );
 
   const event = events.find(
     (item) =>
@@ -70,29 +90,83 @@ export default function OrganizerEventDetailsScreen({
     );
   }
 
+  const participants = registrations.filter(
+    (registration) =>
+      registration.eventId === event.id
+  );
+
+  const activeParticipants =
+    participants.filter(
+      (registration) =>
+        registration.status === "registered"
+    );
+
+  const attendedCount =
+    activeParticipants.filter(
+      (registration) =>
+        registration.attendanceStatus === "attended"
+    ).length;
+
+  const absentCount =
+    activeParticipants.filter(
+      (registration) =>
+        registration.attendanceStatus === "absent"
+    ).length;
+
+  const pendingCount =
+    activeParticipants.filter(
+      (registration) =>
+        registration.attendanceStatus === "pending"
+    ).length;
+
+  const totalRegistrationCount =
+    event.registered +
+    activeParticipants.length;
+
+  const availableSeats = Math.max(
+    event.capacity - totalRegistrationCount,
+    0
+  );
+
   const cancelled =
     event.status === "cancelled";
 
+  const completed =
+    event.status === "completed";
+
   const handleStatusChange = () => {
+    if (completed) {
+      Alert.alert(
+        "Event Completed",
+        "A completed event cannot be cancelled or republished."
+      );
+
+      return;
+    }
+
     Alert.alert(
       cancelled
         ? "Publish Event"
         : "Cancel Event",
+
       cancelled
         ? "Make this event available to students again?"
         : "Students will no longer be able to register for this event.",
+
       [
         {
-          text: "No",
+          text: "Keep Current Status",
           style: "cancel",
         },
         {
           text: cancelled
             ? "Publish"
             : "Cancel Event",
+
           style: cancelled
             ? "default"
             : "destructive",
+
           onPress: () =>
             setEventStatus(
               event.id,
@@ -106,9 +180,14 @@ export default function OrganizerEventDetailsScreen({
   };
 
   const handleDelete = () => {
+    const participantWarning =
+      participants.length > 0
+        ? ` This will also remove ${participants.length} participant records.`
+        : "";
+
     Alert.alert(
       "Delete Event Permanently",
-      `Delete ${event.title}? This action cannot be undone.`,
+      `Delete ${event.title}?${participantWarning} This action cannot be undone.`,
       [
         {
           text: "Keep Event",
@@ -117,8 +196,10 @@ export default function OrganizerEventDetailsScreen({
         {
           text: "Delete",
           style: "destructive",
+
           onPress: () => {
-            cancelRegistration(event.id);
+            removeEventRegistrations(event.id);
+            removeEventPreferences(event.id);
             deleteEvent(event.id);
             navigation.goBack();
           },
@@ -136,30 +217,16 @@ export default function OrganizerEventDetailsScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.poster}>
-          <Ionicons
-            name="calendar"
-            size={78}
-            color={colors.primary}
-          />
-
-          <View
-            style={[
-              styles.statusBadge,
-              cancelled &&
-                styles.cancelledBadge,
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                cancelled &&
-                  styles.cancelledText,
-              ]}
-            >
-              {event.status}
-            </Text>
+        <View style={styles.hero}>
+          <View style={styles.heroIcon}>
+            <Ionicons
+              name="calendar"
+              size={54}
+              color={palette.white}
+            />
           </View>
+
+          <StatusBadge status={event.status} />
         </View>
 
         <Text style={styles.title}>
@@ -186,7 +253,11 @@ export default function OrganizerEventDetailsScreen({
           <InformationRow
             icon="time-outline"
             label="Time"
-            value={event.time}
+            value={
+              event.endTime
+                ? `${event.time} - ${event.endTime}`
+                : event.time
+            }
           />
 
           <InformationRow
@@ -198,10 +269,108 @@ export default function OrganizerEventDetailsScreen({
           <InformationRow
             icon="people-outline"
             label="Registration"
-            value={`${event.registered} registered · ${event.capacity} capacity`}
+            value={`${totalRegistrationCount} registered • ${availableSeats} seats remaining`}
             isLast
           />
         </View>
+
+        <View style={styles.participantHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Participant Overview
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Attendance records created in this app
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() =>
+              navigation.navigate(
+                "OrganizerParticipants",
+                {
+                  eventId: event.id,
+                }
+              )
+            }
+            style={({ pressed }) => [
+              styles.viewParticipantsLink,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text
+              style={styles.viewParticipantsLinkText}
+            >
+              View All
+            </Text>
+
+            <Ionicons
+              name="arrow-forward"
+              size={16}
+              color={palette.purpleDark}
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.statsGrid}>
+          <StatCard
+            value={activeParticipants.length}
+            label="Active"
+            tone="purple"
+          />
+
+          <StatCard
+            value={attendedCount}
+            label="Attended"
+            tone="green"
+          />
+
+          <StatCard
+            value={absentCount}
+            label="Absent"
+            tone="red"
+          />
+
+          <StatCard
+            value={pendingCount}
+            label="Pending"
+            tone="orange"
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View event participants"
+          onPress={() =>
+            navigation.navigate(
+              "OrganizerParticipants",
+              {
+                eventId: event.id,
+              }
+            )
+          }
+          style={({ pressed }) => [
+            styles.participantsButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name="people-outline"
+            size={22}
+            color={palette.white}
+          />
+
+          <Text style={styles.participantsButtonText}>
+            View Participants
+          </Text>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={palette.white}
+          />
+        </Pressable>
 
         <Text style={styles.sectionTitle}>
           Description
@@ -229,7 +398,7 @@ export default function OrganizerEventDetailsScreen({
             <Ionicons
               name="create-outline"
               size={21}
-              color={colors.white}
+              color={palette.white}
             />
 
             <Text style={styles.editText}>
@@ -239,37 +408,57 @@ export default function OrganizerEventDetailsScreen({
 
           <Pressable
             onPress={handleStatusChange}
+            disabled={completed}
             style={({ pressed }) => [
               styles.statusButton,
+
               !cancelled &&
+                !completed &&
                 styles.cancelButton,
-              pressed && styles.pressed,
+
+              completed &&
+                styles.disabledButton,
+
+              pressed &&
+                !completed &&
+                styles.pressed,
             ]}
           >
             <Ionicons
               name={
-                cancelled
-                  ? "refresh-outline"
-                  : "close-circle-outline"
+                completed
+                  ? "checkmark-done-outline"
+                  : cancelled
+                    ? "refresh-outline"
+                    : "close-circle-outline"
               }
               size={21}
               color={
-                cancelled
-                  ? colors.primary
-                  : colors.danger
+                completed
+                  ? palette.secondary
+                  : cancelled
+                    ? palette.purpleDark
+                    : palette.danger
               }
             />
 
             <Text
               style={[
                 styles.statusButtonText,
+
                 !cancelled &&
+                  !completed &&
                   styles.cancelButtonText,
+
+                completed &&
+                  styles.disabledButtonText,
               ]}
             >
-              {cancelled
-                ? "Publish Again"
-                : "Cancel Event"}
+              {completed
+                ? "Completed"
+                : cancelled
+                  ? "Publish Again"
+                  : "Cancel Event"}
             </Text>
           </Pressable>
         </View>
@@ -284,7 +473,7 @@ export default function OrganizerEventDetailsScreen({
           <Ionicons
             name="trash-outline"
             size={21}
-            color={colors.danger}
+            color={palette.danger}
           />
 
           <Text style={styles.deleteText}>
@@ -296,11 +485,73 @@ export default function OrganizerEventDetailsScreen({
   );
 }
 
-interface InformationRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  isLast?: boolean;
+function StatusBadge({
+  status,
+}: {
+  status:
+    | "draft"
+    | "published"
+    | "cancelled"
+    | "completed";
+}) {
+  const stylesByStatus = {
+    draft: {
+      label: "Draft",
+      foreground: palette.warning,
+      background: palette.warningSoft,
+    },
+
+    published: {
+      label: "Published",
+      foreground: palette.success,
+      background: palette.successSoft,
+    },
+
+    cancelled: {
+      label: "Cancelled",
+      foreground: palette.danger,
+      background: palette.dangerSoft,
+    },
+
+    completed: {
+      label: "Completed",
+      foreground: palette.navy,
+      background: "#E7E8FF",
+    },
+  };
+
+  const selected = stylesByStatus[status];
+
+  return (
+    <View
+      style={[
+        styles.statusBadge,
+        {
+          backgroundColor: selected.background,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.statusDot,
+          {
+            backgroundColor: selected.foreground,
+          },
+        ]}
+      />
+
+      <Text
+        style={[
+          styles.statusText,
+          {
+            color: selected.foreground,
+          },
+        ]}
+      >
+        {selected.label}
+      </Text>
+    </View>
+  );
 }
 
 function InformationRow({
@@ -308,7 +559,12 @@ function InformationRow({
   label,
   value,
   isLast = false,
-}: InformationRowProps) {
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
   return (
     <View
       style={[
@@ -320,7 +576,7 @@ function InformationRow({
         <Ionicons
           name={icon}
           size={21}
-          color={colors.primary}
+          color={palette.purpleDark}
         />
       </View>
 
@@ -337,21 +593,81 @@ function InformationRow({
   );
 }
 
+function StatCard({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: "purple" | "green" | "red" | "orange";
+}) {
+  const tones = {
+    purple: {
+      foreground: palette.purpleDark,
+      background: palette.purpleSoft,
+    },
+
+    green: {
+      foreground: palette.success,
+      background: palette.successSoft,
+    },
+
+    red: {
+      foreground: palette.danger,
+      background: palette.dangerSoft,
+    },
+
+    orange: {
+      foreground: palette.warning,
+      background: palette.warningSoft,
+    },
+  };
+
+  const selected = tones[tone];
+
+  return (
+    <View
+      style={[
+        styles.statCard,
+        {
+          backgroundColor: selected.background,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.statValue,
+          {
+            color: selected.foreground,
+          },
+        ]}
+      >
+        {value}
+      </Text>
+
+      <Text style={styles.statLabel}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: palette.background,
   },
 
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: palette.background,
   },
 
   errorText: {
-    color: colors.danger,
+    color: palette.danger,
     fontSize: 17,
     fontWeight: "800",
   },
@@ -361,42 +677,49 @@ const styles = StyleSheet.create({
     paddingBottom: 35,
   },
 
-  poster: {
-    height: 215,
+  hero: {
+    height: 205,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 25,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: palette.navy,
+  },
+
+  heroIcon: {
+    width: 94,
+    height: 94,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 31,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
 
   statusBadge: {
     position: "absolute",
     left: 16,
     bottom: 16,
-    paddingHorizontal: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
     paddingVertical: 7,
+    gap: 6,
     borderRadius: 20,
-    backgroundColor: "#EAF8F2",
   },
 
-  cancelledBadge: {
-    backgroundColor: "#FFF1F1",
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
 
   statusText: {
-    color: colors.success,
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "capitalize",
-  },
-
-  cancelledText: {
-    color: colors.danger,
+    fontSize: 12,
+    fontWeight: "900",
   },
 
   title: {
     marginTop: 22,
-    color: colors.text,
+    color: palette.text,
     fontSize: 27,
     lineHeight: 34,
     fontWeight: "900",
@@ -404,7 +727,7 @@ const styles = StyleSheet.create({
 
   organizer: {
     marginTop: 7,
-    color: colors.textSecondary,
+    color: palette.secondary,
     fontSize: 14,
   },
 
@@ -413,8 +736,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
   },
 
   infoRow: {
@@ -422,7 +745,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: palette.border,
   },
 
   lastRow: {
@@ -435,7 +758,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: palette.purpleSoft,
   },
 
   infoContent: {
@@ -444,28 +767,101 @@ const styles = StyleSheet.create({
   },
 
   infoLabel: {
-    color: colors.textSecondary,
+    color: palette.secondary,
     fontSize: 12,
     fontWeight: "600",
   },
 
   infoValue: {
     marginTop: 3,
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  participantHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginTop: 25,
   },
 
   sectionTitle: {
     marginTop: 24,
-    color: colors.text,
+    color: palette.text,
     fontSize: 20,
+    fontWeight: "900",
+  },
+  participantHeaderView: {
+    flex: 1,
+  },
+
+  sectionSubtitle: {
+    marginTop: 4,
+    color: palette.secondary,
+    fontSize: 12,
+  },
+
+  viewParticipantsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: 2,
+    gap: 4,
+  },
+
+  viewParticipantsLinkText: {
+    color: palette.purpleDark,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: 14,
+  },
+
+  statCard: {
+    width: "48%",
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 18,
+  },
+
+  statValue: {
+    fontSize: 23,
+    fontWeight: "900",
+  },
+
+  statLabel: {
+    marginTop: 3,
+    color: palette.secondary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  participantsButton: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+    paddingHorizontal: 18,
+    gap: 9,
+    borderRadius: 16,
+    backgroundColor: palette.navy,
+  },
+
+  participantsButtonText: {
+    flex: 1,
+    color: palette.white,
+    fontSize: 15,
     fontWeight: "900",
   },
 
   description: {
     marginTop: 10,
-    color: colors.textSecondary,
+    color: palette.secondary,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -484,11 +880,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
     borderRadius: 15,
-    backgroundColor: colors.primary,
+    backgroundColor: palette.purpleDark,
   },
 
   editText: {
-    color: colors.white,
+    color: palette.white,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -502,23 +898,32 @@ const styles = StyleSheet.create({
     gap: 7,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: palette.purpleDark,
+    backgroundColor: palette.purpleSoft,
   },
 
   cancelButton: {
     borderColor: "#F2CACA",
-    backgroundColor: "#FFF1F1",
+    backgroundColor: palette.dangerSoft,
+  },
+
+  disabledButton: {
+    borderColor: palette.border,
+    backgroundColor: "#EFEFF3",
   },
 
   statusButtonText: {
-    color: colors.primary,
-    fontSize: 14,
+    color: palette.purpleDark,
+    fontSize: 13,
     fontWeight: "900",
   },
 
   cancelButtonText: {
-    color: colors.danger,
+    color: palette.danger,
+  },
+
+  disabledButtonText: {
+    color: palette.secondary,
   },
 
   deleteButton: {
@@ -535,7 +940,7 @@ const styles = StyleSheet.create({
   },
 
   deleteText: {
-    color: colors.danger,
+    color: palette.danger,
     fontSize: 14,
     fontWeight: "900",
   },

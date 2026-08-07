@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
+import { useRegistrationStore } from "../../store/registrationStore";
 import { colors } from "../../theme/colors";
 
 import {
@@ -81,6 +82,12 @@ export default function OrganizerEventFormScreen({
   const [time, setTime] =
     useState("");
 
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
+  const [posterUrl, setPosterUrl] = useState("");
+  const [publishNow, setPublishNow] = useState(true);
+
   const [capacity, setCapacity] =
     useState("50");
 
@@ -93,6 +100,8 @@ export default function OrganizerEventFormScreen({
   const [description, setDescription] =
     useState("");
 
+  const registrations = useRegistrationStore((state) => state.registrations);
+
   useEffect(() => {
     if (!editingEvent) {
       return;
@@ -103,6 +112,11 @@ export default function OrganizerEventFormScreen({
     setVenue(editingEvent.venue);
     setDate(editingEvent.date);
     setTime(editingEvent.time);
+    setEndDate(editingEvent.endDate ?? "");
+    setEndTime(editingEvent.endTime ?? "");
+    setRegistrationDeadline(editingEvent.registrationDeadline ?? "");
+    setPosterUrl(editingEvent.posterUrl ?? "");
+    setPublishNow(editingEvent.status !== "draft");
 
     setCapacity(
       editingEvent.capacity.toString()
@@ -134,6 +148,8 @@ export default function OrganizerEventFormScreen({
     const parsedCapacity =
       Number(capacity);
 
+    const parsedEventDate = new Date(cleanDate);
+
     if (
       !cleanTitle ||
       !cleanCategory ||
@@ -151,6 +167,32 @@ export default function OrganizerEventFormScreen({
       return;
     }
 
+    if (Number.isNaN(parsedEventDate.getTime())) {
+      Alert.alert("Invalid Date", "Use a recognizable date such as September 10, 2026.");
+      return;
+    }
+
+    if (endDate.trim()) {
+      const parsedEndDate = new Date(endDate.trim());
+      if (Number.isNaN(parsedEndDate.getTime()) || parsedEndDate < parsedEventDate) {
+        Alert.alert("Invalid End Date", "The end date must be valid and cannot be before the event date.");
+        return;
+      }
+    }
+
+    if (registrationDeadline.trim()) {
+      const parsedDeadline = new Date(registrationDeadline.trim());
+      if (Number.isNaN(parsedDeadline.getTime()) || parsedDeadline > parsedEventDate) {
+        Alert.alert("Invalid Deadline", "The registration deadline must be valid and cannot be after the event date.");
+        return;
+      }
+    }
+
+    if (posterUrl.trim() && !/^https?:\/\//i.test(posterUrl.trim())) {
+      Alert.alert("Invalid Poster URL", "Poster URL must begin with http:// or https://.");
+      return;
+    }
+
     if (
       !Number.isInteger(
         parsedCapacity
@@ -165,14 +207,18 @@ export default function OrganizerEventFormScreen({
       return;
     }
 
-    if (
-      editingEvent &&
-      parsedCapacity <
-        editingEvent.registered
-    ) {
+    const activeLocalRegistrations = editingEvent
+      ? registrations.filter(
+          (item) => item.eventId === editingEvent.id && item.status === "registered"
+        ).length
+      : 0;
+    const currentRegistrationCount =
+      (editingEvent?.registered ?? 0) + activeLocalRegistrations;
+
+    if (editingEvent && parsedCapacity < currentRegistrationCount) {
       Alert.alert(
         "Invalid Capacity",
-        `Capacity cannot be lower than the current ${editingEvent.registered} registrations.`
+        `Capacity cannot be lower than the current ${currentRegistrationCount} registrations.`
       );
 
       return;
@@ -189,6 +235,11 @@ export default function OrganizerEventFormScreen({
         cleanOrganizerName,
       description:
         cleanDescription,
+      endDate: endDate.trim() || undefined,
+      endTime: endTime.trim() || undefined,
+      registrationDeadline: registrationDeadline.trim() || undefined,
+      posterUrl: posterUrl.trim() || null,
+      status: publishNow ? "published" : "draft",
     };
 
     if (editingEvent) {
@@ -305,6 +356,23 @@ export default function OrganizerEventFormScreen({
             placeholder="10:00 AM"
           />
 
+          <View style={styles.twoColumnRow}>
+            <View style={styles.column}>
+              <FormInput label="End Date (optional)" icon="calendar-outline" value={endDate} onChangeText={setEndDate} placeholder="September 10, 2026" />
+            </View>
+            <View style={styles.column}>
+              <FormInput label="End Time (optional)" icon="time-outline" value={endTime} onChangeText={setEndTime} placeholder="2:00 PM" />
+            </View>
+          </View>
+
+          <FormInput
+            label="Registration Deadline (optional)"
+            icon="hourglass-outline"
+            value={registrationDeadline}
+            onChangeText={setRegistrationDeadline}
+            placeholder="September 8, 2026"
+          />
+
           <FormInput
             label="Capacity"
             icon="people-outline"
@@ -322,6 +390,14 @@ export default function OrganizerEventFormScreen({
               setOrganizerName
             }
             placeholder="IT Club"
+          />
+
+          <FormInput
+            label="Poster Image URL (optional)"
+            icon="image-outline"
+            value={posterUrl}
+            onChangeText={setPosterUrl}
+            placeholder="https://example.com/event-poster.jpg"
           />
 
           <Text style={styles.label}>
@@ -357,6 +433,12 @@ export default function OrganizerEventFormScreen({
             />
           </View>
 
+          <Text style={styles.label}>Publishing</Text>
+          <View style={styles.statusSelector}>
+            <StatusOption label="Publish now" icon="globe-outline" selected={publishNow} onPress={() => setPublishNow(true)} />
+            <StatusOption label="Save draft" icon="document-outline" selected={!publishNow} onPress={() => setPublishNow(false)} />
+          </View>
+
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [
@@ -383,6 +465,15 @@ export default function OrganizerEventFormScreen({
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function StatusOption({ label, icon, selected, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.statusOption, selected && styles.selectedStatusOption]}>
+      <Ionicons name={icon} size={19} color={selected ? colors.white : colors.primary} />
+      <Text style={[styles.statusOptionText, selected && styles.selectedStatusOptionText]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -515,6 +606,48 @@ const styles = StyleSheet.create({
   descriptionInput: {
     minHeight: 100,
     paddingTop: 0,
+  },
+
+  twoColumnRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  column: {
+    flex: 1,
+  },
+
+  statusSelector: {
+    flexDirection: "row",
+    marginBottom: 18,
+    gap: 10,
+  },
+
+  statusOption: {
+    flex: 1,
+    minHeight: 49,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+  },
+
+  selectedStatusOption: {
+    backgroundColor: colors.primary,
+  },
+
+  statusOptionText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  selectedStatusOptionText: {
+    color: colors.white,
   },
 
   saveButton: {

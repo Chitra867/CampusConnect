@@ -21,6 +21,7 @@ export type RegistrationResult =
   | "event_full"
   | "event_not_found"
   | "event_unavailable"
+  | "registration_closed"
   | "not_authenticated"
   | "student_only";
 
@@ -126,6 +127,17 @@ export const useRegistrationStore =
             "published"
           ) {
             return "event_unavailable";
+          }
+
+          if (event.registrationDeadline) {
+            const deadline = new Date(event.registrationDeadline);
+
+            if (
+              !Number.isNaN(deadline.getTime()) &&
+              deadline.getTime() < Date.now()
+            ) {
+              return "registration_closed";
+            }
           }
 
           const existingRegistration =
