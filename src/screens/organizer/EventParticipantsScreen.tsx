@@ -18,6 +18,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEventStore } from "../../store/eventStore";
+import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 
 import {
@@ -64,9 +65,10 @@ export default function EventParticipantsScreen({
   route,
 }: Props) {
   const { eventId } = route.params;
+  const user = useAuthStore((state) => state.user);
 
   const event = useEventStore((state) =>
-    state.events.find((item) => item.id === eventId)
+    state.events.find((item) => item.id === eventId && item.createdBy === user?.id)
   );
 
   const registrations = useRegistrationStore(

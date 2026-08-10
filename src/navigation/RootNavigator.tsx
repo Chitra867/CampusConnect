@@ -1,6 +1,5 @@
-import {
-  NavigationContainer,
-} from "@react-navigation/native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
 
 import {
   createBottomTabNavigator,
@@ -302,6 +301,15 @@ export default function RootNavigator() {
   const user = useAuthStore(
     (state) => state.user
   );
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+
+  if (!hasHydrated) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#078451" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -315,3 +323,12 @@ export default function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: navigationColors.background,
+  },
+});

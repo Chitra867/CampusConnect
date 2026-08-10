@@ -24,7 +24,10 @@ export default function NotificationsScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
   const events = useEventStore((state) => state.events);
   const registrations = useRegistrationStore((state) => state.registrations);
-  const reminderIds = usePreferenceStore((state) => state.reminderEventIds);
+  const preferencesByUser = usePreferenceStore((state) => state.preferencesByUser);
+  const reminderIds = user
+    ? preferencesByUser[user.id]?.reminderEventIds ?? []
+    : [];
 
   const registeredIds = new Set(
     registrations

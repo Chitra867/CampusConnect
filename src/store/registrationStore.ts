@@ -86,6 +86,15 @@ function createRegistrationId(
   return `registration-${eventId}-${studentId}`;
 }
 
+function getDeadlineTime(value: string): number {
+  const deadline = new Date(value);
+  if (Number.isNaN(deadline.getTime())) return Number.NaN;
+
+  const includesTime = /\d{1,2}:\d{2}|\b(?:am|pm)\b|T\d{2}/i.test(value);
+  if (!includesTime) deadline.setHours(23, 59, 59, 999);
+  return deadline.getTime();
+}
+
 export const useRegistrationStore =
   create<RegistrationState>()(
     persist(
@@ -130,11 +139,11 @@ export const useRegistrationStore =
           }
 
           if (event.registrationDeadline) {
-            const deadline = new Date(event.registrationDeadline);
+            const deadlineTime = getDeadlineTime(event.registrationDeadline);
 
             if (
-              !Number.isNaN(deadline.getTime()) &&
-              deadline.getTime() < Date.now()
+              !Number.isNaN(deadlineTime) &&
+              deadlineTime < Date.now()
             ) {
               return "registration_closed";
             }
@@ -304,6 +313,11 @@ export const useRegistrationStore =
             return false;
           }
 
+          const event = useEventStore.getState().events.find((item) => item.id === eventId);
+          if (!event || event.status === "completed") {
+            return false;
+          }
+
           const registration =
             get().registrations.find(
               (item) =>
@@ -313,7 +327,7 @@ export const useRegistrationStore =
                   user.id &&
                 isActiveRegistration(
                   item
-                )
+                ) && item.attendanceStatus === "pending"
             );
 
           if (!registration) {
@@ -436,6 +450,14 @@ export const useRegistrationStore =
             registration.status ===
               "cancelled"
           ) {
+            return false;
+          }
+
+
+          const event = useEventStore.getState().events.find(
+            (item) => item.id === registration.eventId
+          );
+          if (!event || event.createdBy !== organizer.id) {
             return false;
           }
 

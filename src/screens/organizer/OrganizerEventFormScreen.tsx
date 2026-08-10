@@ -62,7 +62,7 @@ export default function OrganizerEventFormScreen({
     route.params?.eventId;
 
   const editingEvent = events.find(
-    (event) => event.id === eventId
+    (event) => event.id === eventId && event.createdBy === user?.id
   );
 
   const editing = Boolean(editingEvent);
@@ -212,8 +212,7 @@ export default function OrganizerEventFormScreen({
           (item) => item.eventId === editingEvent.id && item.status === "registered"
         ).length
       : 0;
-    const currentRegistrationCount =
-      (editingEvent?.registered ?? 0) + activeLocalRegistrations;
+    const currentRegistrationCount = activeLocalRegistrations;
 
     if (editingEvent && parsedCapacity < currentRegistrationCount) {
       Alert.alert(

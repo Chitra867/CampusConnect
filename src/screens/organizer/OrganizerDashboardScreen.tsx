@@ -40,9 +40,10 @@ export default function OrganizerDashboardScreen() {
     (state) => state.user
   );
 
-  const events = useEventStore(
+  const allEvents = useEventStore(
     (state) => state.events
   );
+  const events = allEvents.filter((event) => event.createdBy === user?.id);
 
   const registrations =
     useRegistrationStore(

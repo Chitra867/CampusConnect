@@ -62,12 +62,15 @@ export default function EventDetailsScreen({
         state.cancelRegistration
     );
 
-  const bookmarkedEventIds = usePreferenceStore(
-    (state) => state.bookmarkedEventIds
+  const preferencesByUser = usePreferenceStore(
+    (state) => state.preferencesByUser
   );
-  const reminderEventIds = usePreferenceStore(
-    (state) => state.reminderEventIds
-  );
+  const bookmarkedEventIds = user
+    ? preferencesByUser[user.id]?.bookmarkedEventIds ?? []
+    : [];
+  const reminderEventIds = user
+    ? preferencesByUser[user.id]?.reminderEventIds ?? []
+    : [];
   const toggleBookmark = usePreferenceStore((state) => state.toggleBookmark);
   const toggleReminder = usePreferenceStore((state) => state.toggleReminder);
 
@@ -121,8 +124,13 @@ export default function EventDetailsScreen({
 
   const registrationClosed = Boolean(
     event.registrationDeadline &&
-      !Number.isNaN(new Date(event.registrationDeadline).getTime()) &&
-      new Date(event.registrationDeadline).getTime() < Date.now()
+      (() => {
+        const deadline = new Date(event.registrationDeadline);
+        if (Number.isNaN(deadline.getTime())) return false;
+        const includesTime = /\d{1,2}:\d{2}|\b(?:am|pm)\b|T\d{2}/i.test(event.registrationDeadline);
+        if (!includesTime) deadline.setHours(23, 59, 59, 999);
+        return deadline.getTime() < Date.now();
+      })()
   );
 
   const eventFull =

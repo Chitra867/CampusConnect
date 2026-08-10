@@ -15,6 +15,7 @@ import {
 
 interface AuthState {
   user: AuthUser | null;
+  hasHydrated: boolean;
 
   login: (
     email: string,
@@ -38,6 +39,7 @@ interface AuthState {
   ) => void;
 
   logout: () => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 function createStableUserId(
@@ -63,10 +65,7 @@ function createLocalUser(
 
   if (role === "organizer") {
     return {
-      id: createStableUserId(
-        cleanEmail,
-        role
-      ),
+      id: "organizer-1",
 
       fullName: "Campus Organizer",
       email: cleanEmail,
@@ -113,6 +112,7 @@ export const useAuthStore =
     persist(
       (set) => ({
         user: null,
+        hasHydrated: false,
 
         login: (email, role) => {
           const user = createLocalUser(
@@ -129,7 +129,9 @@ export const useAuthStore =
 
           set({
             user: {
-              id: createStableUserId(cleanEmail, values.role),
+              id: values.role === "organizer"
+                ? "organizer-1"
+                : createStableUserId(cleanEmail, values.role),
               fullName: values.fullName.trim(),
               email: cleanEmail,
               role: values.role,
@@ -165,6 +167,8 @@ export const useAuthStore =
             user: null,
           });
         },
+
+        setHasHydrated: (value) => set({ hasHydrated: value }),
       }),
       {
         name: "campusconnect-auth",
@@ -178,6 +182,9 @@ export const useAuthStore =
         }),
 
         version: 1,
+        onRehydrateStorage: () => (state) => {
+          state?.setHasHydrated(true);
+        },
       }
     )
   );

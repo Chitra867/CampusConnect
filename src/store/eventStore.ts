@@ -8,6 +8,7 @@ import {
 } from "zustand/middleware";
 
 import { INITIAL_EVENTS } from "../data/events";
+import { useAuthStore } from "./authStore";
 
 import {
   CampusEvent,
@@ -51,6 +52,7 @@ function normalizeEvent(
 
   return {
     ...event,
+    registered: 0,
 
     clubId:
       event.clubId ?? null,
@@ -82,6 +84,10 @@ export const useEventStore =
           values,
           createdBy
         ) => {
+          const organizer = useAuthStore.getState().user;
+          if (!organizer || organizer.role !== "organizer" || organizer.id !== createdBy) {
+            return "";
+          }
           const now =
             new Date().toISOString();
 
@@ -139,6 +145,11 @@ export const useEventStore =
             return false;
           }
 
+          const organizer = useAuthStore.getState().user;
+          if (!organizer || organizer.role !== "organizer" || existingEvent.createdBy !== organizer.id) {
+            return false;
+          }
+
           const {
             status,
             ...eventValues
@@ -175,13 +186,14 @@ export const useEventStore =
           eventId,
           status
         ) => {
-          const exists =
-            get().events.some(
-              (event) =>
-                event.id === eventId
-            );
+          const organizer = useAuthStore.getState().user;
+          const existingEvent = get().events.find((event) => event.id === eventId);
 
-          if (!exists) {
+          if (!organizer || organizer.role !== "organizer" || !existingEvent || existingEvent.createdBy !== organizer.id) {
+            return false;
+          }
+
+          if (existingEvent.status === "completed" && status !== "completed") {
             return false;
           }
 
@@ -206,13 +218,10 @@ export const useEventStore =
         deleteEvent: (
           eventId
         ) => {
-          const exists =
-            get().events.some(
-              (event) =>
-                event.id === eventId
-            );
+          const organizer = useAuthStore.getState().user;
+          const existingEvent = get().events.find((event) => event.id === eventId);
 
-          if (!exists) {
+          if (!organizer || organizer.role !== "organizer" || !existingEvent || existingEvent.createdBy !== organizer.id) {
             return false;
           }
 
@@ -256,7 +265,7 @@ export const useEventStore =
           events: state.events,
         }),
 
-        version: 2,
+        version: 3,
 
         migrate: (
           persistedState: unknown

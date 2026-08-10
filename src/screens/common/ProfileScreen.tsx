@@ -13,7 +13,10 @@ export default function ProfileScreen() {
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const logout = useAuthStore((state) => state.logout);
   const registrations = useRegistrationStore((state) => state.registrations);
-  const savedCount = usePreferenceStore((state) => state.bookmarkedEventIds.length);
+  const preferencesByUser = usePreferenceStore((state) => state.preferencesByUser);
+  const savedCount = user
+    ? preferencesByUser[user.id]?.bookmarkedEventIds.length ?? 0
+    : 0;
 
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.fullName ?? "");

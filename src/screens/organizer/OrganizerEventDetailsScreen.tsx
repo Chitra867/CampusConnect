@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEventStore } from "../../store/eventStore";
+import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 import { usePreferenceStore } from "../../store/preferenceStore";
 
@@ -49,6 +50,7 @@ export default function OrganizerEventDetailsScreen({
   navigation,
   route,
 }: Props) {
+  const user = useAuthStore((state) => state.user);
   const events = useEventStore(
     (state) => state.events
   );
@@ -77,7 +79,7 @@ export default function OrganizerEventDetailsScreen({
 
   const event = events.find(
     (item) =>
-      item.id === route.params.eventId
+      item.id === route.params.eventId && item.createdBy === user?.id
   );
 
   if (!event) {
@@ -180,14 +182,17 @@ export default function OrganizerEventDetailsScreen({
   };
 
   const handleDelete = () => {
-    const participantWarning =
-      participants.length > 0
-        ? ` This will also remove ${participants.length} participant records.`
-        : "";
+    if (participants.length > 0) {
+      Alert.alert(
+        "Event Has Registration History",
+        "This event cannot be deleted because participant records must be preserved. Cancel or complete the event instead."
+      );
+      return;
+    }
 
     Alert.alert(
       "Delete Event Permanently",
-      `Delete ${event.title}?${participantWarning} This action cannot be undone.`,
+      `Delete ${event.title}? This action cannot be undone.`,
       [
         {
           text: "Keep Event",

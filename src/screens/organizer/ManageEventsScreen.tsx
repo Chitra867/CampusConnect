@@ -27,6 +27,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEventStore } from "../../store/eventStore";
+import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 
 import { colors } from "../../theme/colors";
@@ -46,19 +47,18 @@ export default function ManageEventsScreen() {
   const navigation =
     useNavigation<NavigationProp>();
 
-  const events = useEventStore(
+  const user = useAuthStore((state) => state.user);
+  const allEvents = useEventStore(
     (state) => state.events
   );
+  const events = allEvents.filter((event) => event.createdBy === user?.id);
 
   const setEventStatus =
     useEventStore(
       (state) => state.setEventStatus
     );
 
-  const registeredEventIds =
-    useRegistrationStore(
-      (state) => state.registeredEventIds
-    );
+  const registrationRecords = useRegistrationStore((state) => state.registrations);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] =
@@ -283,11 +283,9 @@ export default function ManageEventsScreen() {
           </>
         }
         renderItem={({ item }) => {
-          const registrations =
-            item.registered +
-            (registeredEventIds.includes(item.id)
-              ? 1
-              : 0);
+          const registrations = registrationRecords.filter(
+            (registration) => registration.eventId === item.id && registration.status === "registered"
+          ).length;
 
           return (
             <OrganizerEventCard

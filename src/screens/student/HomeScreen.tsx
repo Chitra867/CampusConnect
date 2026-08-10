@@ -160,9 +160,12 @@ export default function HomeScreen() {
     setSelectedClub,
   ] = useState<string | null>(null);
 
-  const bookmarkedIds = usePreferenceStore(
-    (state) => state.bookmarkedEventIds
+  const preferencesByUser = usePreferenceStore(
+    (state) => state.preferencesByUser
   );
+  const bookmarkedIds = user
+    ? preferencesByUser[user.id]?.bookmarkedEventIds ?? []
+    : [];
 
   const toggleBookmark = usePreferenceStore(
     (state) => state.toggleBookmark

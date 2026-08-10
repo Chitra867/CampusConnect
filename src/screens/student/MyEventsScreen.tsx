@@ -249,9 +249,12 @@ export default function MyEventsScreen() {
       "upcoming"
     );
 
-  const reminderEventIds = usePreferenceStore(
-    (state) => state.reminderEventIds
+  const preferencesByUser = usePreferenceStore(
+    (state) => state.preferencesByUser
   );
+  const reminderEventIds = user
+    ? preferencesByUser[user.id]?.reminderEventIds ?? []
+    : [];
 
   const toggleReminder = usePreferenceStore(
     (state) => state.toggleReminder

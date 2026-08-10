@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import EventCard from "../../components/EventCard";
+import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
 import { usePreferenceStore } from "../../store/preferenceStore";
 import { useRegistrationStore } from "../../store/registrationStore";
@@ -15,11 +16,13 @@ type NavigationProp = NativeStackNavigationProp<StudentRootStackParamList>;
 
 export default function SavedEventsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const user = useAuthStore((state) => state.user);
   const events = useEventStore((state) => state.events);
   const registrations = useRegistrationStore((state) => state.registrations);
-  const bookmarkedEventIds = usePreferenceStore(
-    (state) => state.bookmarkedEventIds
-  );
+  const preferencesByUser = usePreferenceStore((state) => state.preferencesByUser);
+  const bookmarkedEventIds = user
+    ? preferencesByUser[user.id]?.bookmarkedEventIds ?? []
+    : [];
   const toggleBookmark = usePreferenceStore((state) => state.toggleBookmark);
 
   const activeCounts = registrations.reduce<Record<string, number>>(

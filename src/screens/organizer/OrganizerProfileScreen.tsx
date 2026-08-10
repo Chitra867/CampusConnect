@@ -25,22 +25,19 @@ export default function OrganizerProfileScreen() {
     (state) => state.logout
   );
 
-  const events = useEventStore(
+  const allEvents = useEventStore(
     (state) => state.events
   );
+  const events = allEvents.filter((event) => event.createdBy === user?.id);
 
-  const registeredEventIds =
-    useRegistrationStore(
-      (state) => state.registeredEventIds
-    );
+  const registrations = useRegistrationStore((state) => state.registrations);
 
   const totalRegistrations = events.reduce(
     (total, event) =>
       total +
-      event.registered +
-      (registeredEventIds.includes(event.id)
-        ? 1
-        : 0),
+      registrations.filter((registration) =>
+        registration.eventId === event.id && registration.status === "registered"
+      ).length,
     0
   );
 
