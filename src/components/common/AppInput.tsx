@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
+import type {
   KeyboardTypeOptions,
+  TextInputProps} from "react-native";
+import {
   StyleSheet,
   Text,
   TextInput,
-  TextInputProps,
   View,
 } from "react-native";
 

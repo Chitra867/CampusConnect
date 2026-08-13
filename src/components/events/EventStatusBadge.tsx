@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { CampusEvent } from "../../types";
+import type { CampusEvent } from "../../types";
 import { colors } from "../../theme/colors";
 
 export default function EventStatusBadge({ status }: { status: CampusEvent["status"] }) {

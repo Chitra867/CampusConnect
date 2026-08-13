@@ -1,4 +1,4 @@
-import { CampusEvent } from "../types";
+import type { CampusEvent } from "../types";
 import { DEMO_ORGANIZER_ID } from "../store/authStore";
 
 export const INITIAL_EVENTS: CampusEvent[] = [

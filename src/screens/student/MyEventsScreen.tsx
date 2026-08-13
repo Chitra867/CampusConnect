@@ -16,13 +16,14 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 
-import {
+import type {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScheduleEventCard from "../../components/student/ScheduleEventCard";
-import { ScheduleTab, useStudentEvents } from "../../hooks/useStudentEvents";
+import type { ScheduleTab} from "../../hooks/useStudentEvents";
+import { useStudentEvents } from "../../hooks/useStudentEvents";
 
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
@@ -32,7 +33,7 @@ import {
   useRegistrationStore,
 } from "../../store/registrationStore";
 
-import { StudentRootStackParamList } from "../../types";
+import type { StudentRootStackParamList } from "../../types";
 
 type NavigationProp =
   NativeStackNavigationProp<StudentRootStackParamList>;

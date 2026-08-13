@@ -13,7 +13,7 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 
-import {
+import type {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
@@ -28,7 +28,7 @@ import { useEventFilters } from "../../hooks/useEventFilters";
 
 import { colors } from "../../theme/colors";
 
-import {
+import type {
   CampusEvent,
   OrganizerRootStackParamList,
 } from "../../types";

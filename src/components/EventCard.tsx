@@ -8,7 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors } from "../theme/colors";
-import { CampusEvent } from "../types";
+import type { CampusEvent } from "../types";
 
 interface EventCardProps {
   event: CampusEvent;

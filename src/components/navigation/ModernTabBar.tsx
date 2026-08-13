@@ -7,7 +7,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import {
+import type {
   BottomTabBarProps,
 } from "@react-navigation/bottom-tabs";
 

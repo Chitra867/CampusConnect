@@ -12,7 +12,7 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 
-import {
+import type {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
@@ -27,7 +27,7 @@ import { useOrganizerStats } from "../../hooks/useOrganizerStats";
 
 import { colors } from "../../theme/colors";
 
-import { OrganizerRootStackParamList } from "../../types";
+import type { OrganizerRootStackParamList } from "../../types";
 
 type NavigationProp =
   NativeStackNavigationProp<OrganizerRootStackParamList>;

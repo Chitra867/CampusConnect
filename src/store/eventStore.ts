@@ -10,7 +10,7 @@ import {
 import { INITIAL_EVENTS } from "../data/events";
 import { DEMO_ORGANIZER_ID, useAuthStore } from "./authStore";
 
-import {
+import type {
   CampusEvent,
   EventFormValues,
   EventStatus,

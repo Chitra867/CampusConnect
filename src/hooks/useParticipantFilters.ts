@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { EventRegistration } from "../types";
+import type { EventRegistration } from "../types";
 
 export type ParticipantFilter =
   | "all"

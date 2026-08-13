@@ -12,7 +12,7 @@ interface Props {
   onFilterChange: (value: EventFilter) => void;
 }
 
-const visibleFilters: Array<{ value: EventFilter; label: string }> = [
+const visibleFilters: { value: EventFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "published", label: "Published" },
   { value: "cancelled", label: "Cancelled" },

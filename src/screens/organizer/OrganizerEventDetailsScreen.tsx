@@ -9,7 +9,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,7 +19,7 @@ import { useRegistrationStore } from "../../store/registrationStore";
 import { usePreferenceStore } from "../../store/preferenceStore";
 import { getTotalRegistrationCount } from "../../utils/eventRules";
 
-import {
+import type {
   OrganizerRootStackParamList,
 } from "../../types";
 

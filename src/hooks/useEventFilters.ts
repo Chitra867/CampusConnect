@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { CampusEvent, EventStatus } from "../types";
+import type { CampusEvent, EventStatus } from "../types";
 
 export type EventFilter = "all" | EventStatus;
 

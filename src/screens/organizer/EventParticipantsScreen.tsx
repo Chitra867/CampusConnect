@@ -11,7 +11,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,7 +20,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 import { useParticipantFilters } from "../../hooks/useParticipantFilters";
 
-import {
+import type {
   AttendanceStatus,
   EventRegistration,
   OrganizerRootStackParamList,

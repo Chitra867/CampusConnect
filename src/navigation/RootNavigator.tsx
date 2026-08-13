@@ -30,7 +30,7 @@ import SavedEventsScreen from "../screens/student/SavedEventsScreen";
 
 import { useAuthStore } from "../store/authStore";
 
-import {
+import type {
   OrganizerRootStackParamList,
   StudentRootStackParamList,
 } from "../types";

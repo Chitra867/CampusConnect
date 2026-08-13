@@ -16,7 +16,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import {
+import type {
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
 
@@ -30,7 +30,7 @@ import { useRegistrationStore } from "../../store/registrationStore";
 import { getTotalRegistrationCount, parseDateTime } from "../../utils/eventRules";
 import { colors } from "../../theme/colors";
 
-import {
+import type {
   EventFormValues,
   OrganizerRootStackParamList,
 } from "../../types";

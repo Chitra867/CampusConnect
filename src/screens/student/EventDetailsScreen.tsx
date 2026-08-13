@@ -10,7 +10,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import {
+import type {
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
 
@@ -31,7 +31,7 @@ import {
 
 import { colors } from "../../theme/colors";
 
-import {
+import type {
   StudentRootStackParamList,
 } from "../../types";
 

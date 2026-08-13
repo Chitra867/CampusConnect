@@ -19,7 +19,7 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 
-import {
+import type {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
@@ -34,7 +34,7 @@ import {
 } from "../../store/registrationStore";
 import { useHomeEvents } from "../../hooks/useHomeEvents";
 
-import {
+import type {
   CampusEvent,
   StudentRootStackParamList,
 } from "../../types";

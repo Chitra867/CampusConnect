@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { CampusEvent, EventRegistration } from "../types";
+import type { CampusEvent, EventRegistration } from "../types";
 import { getTotalRegistrationCount } from "../utils/eventRules";
 
 export function useOrganizerStats(

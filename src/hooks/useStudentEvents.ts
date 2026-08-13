@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { CampusEvent, EventRegistration } from "../types";
+import type { CampusEvent, EventRegistration } from "../types";
 
 export type ScheduleTab = "upcoming" | "past";
 export interface EventSection { title: string; data: CampusEvent[] }

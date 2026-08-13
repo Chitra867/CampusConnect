@@ -15,7 +15,7 @@ import {
   isRegistrationClosed,
 } from "../utils/eventRules";
 
-import {
+import type {
   AttendanceStatus,
   EventRegistration,
 } from "../types";

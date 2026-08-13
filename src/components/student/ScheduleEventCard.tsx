@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { CampusEvent } from "../../types";
+import type { CampusEvent } from "../../types";
 
 interface Props {
   event: CampusEvent;

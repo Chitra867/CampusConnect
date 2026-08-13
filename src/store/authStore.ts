@@ -7,7 +7,7 @@ import {
   persist,
 } from "zustand/middleware";
 
-import {
+import type {
   AuthUser,
   RegistrationFormValues,
   UserRole,

@@ -1,4 +1,4 @@
-import { CampusEvent, EventRegistration } from "../types";
+import type { CampusEvent, EventRegistration } from "../types";
 
 export function getActiveRegistrationCount(
   eventId: string,
