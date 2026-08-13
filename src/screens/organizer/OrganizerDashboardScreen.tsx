@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
 import { useRegistrationStore } from "../../store/registrationStore";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 import { colors } from "../../theme/colors";
 
@@ -50,23 +51,8 @@ export default function OrganizerDashboardScreen() {
       (state) => state.registrations
     );
 
-  const activeRegistrationCounts = registrations.reduce<Record<string, number>>(
-    (counts, registration) => {
-      if (registration.status === "registered") {
-        counts[registration.eventId] =
-          (counts[registration.eventId] ?? 0) + 1;
-      }
-
-      return counts;
-    },
-    {}
-  );
-
   const totalRegistrations = events.reduce(
-    (total, event) =>
-      total +
-      event.registered +
-      (activeRegistrationCounts[event.id] ?? 0),
+    (total, event) => total + getTotalRegistrationCount(event, registrations),
     0
   );
 
@@ -89,10 +75,7 @@ export default function OrganizerDashboardScreen() {
   const getRegistrationCount = (
     event: CampusEvent
   ) => {
-    return (
-      event.registered +
-      (activeRegistrationCounts[event.id] ?? 0)
-    );
+    return getTotalRegistrationCount(event, registrations);
   };
 
   return (

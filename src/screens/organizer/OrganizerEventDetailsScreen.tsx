@@ -17,6 +17,7 @@ import { useEventStore } from "../../store/eventStore";
 import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 import { usePreferenceStore } from "../../store/preferenceStore";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 import {
   OrganizerRootStackParamList,
@@ -121,9 +122,7 @@ export default function OrganizerEventDetailsScreen({
         registration.attendanceStatus === "pending"
     ).length;
 
-  const totalRegistrationCount =
-    event.registered +
-    activeParticipants.length;
+  const totalRegistrationCount = getTotalRegistrationCount(event, registrations);
 
   const availableSeats = Math.max(
     event.capacity - totalRegistrationCount,
@@ -146,14 +145,14 @@ export default function OrganizerEventDetailsScreen({
       return;
     }
 
-    Alert.alert(
-      cancelled
-        ? "Publish Event"
-        : "Cancel Event",
+    const draft = event.status === "draft";
 
-      cancelled
-        ? "Make this event available to students again?"
-        : "Students will no longer be able to register for this event.",
+    Alert.alert(
+      cancelled || draft ? "Publish Event" : "Update Event Status",
+
+      cancelled || draft
+        ? "Make this event available to students?"
+        : "Cancel the event or mark it as completed.",
 
       [
         {
@@ -161,28 +160,36 @@ export default function OrganizerEventDetailsScreen({
           style: "cancel",
         },
         {
-          text: cancelled
+          text: cancelled || draft
             ? "Publish"
             : "Cancel Event",
 
-          style: cancelled
+          style: cancelled || draft
             ? "default"
             : "destructive",
 
           onPress: () =>
             setEventStatus(
               event.id,
-              cancelled
+              cancelled || draft
                 ? "published"
                 : "cancelled"
             ),
         },
+        ...(event.status === "published"
+          ? [
+              {
+                text: "Complete Event",
+                onPress: () => setEventStatus(event.id, "completed"),
+              },
+            ]
+          : []),
       ]
     );
   };
 
   const handleDelete = () => {
-    if (participants.length > 0) {
+    if (totalRegistrationCount > 0) {
       Alert.alert(
         "Event Has Registration History",
         "This event cannot be deleted because participant records must be preserved. Cancel or complete the event instead."
@@ -395,9 +402,11 @@ export default function OrganizerEventDetailsScreen({
                 }
               )
             }
+            disabled={completed}
             style={({ pressed }) => [
               styles.editButton,
-              pressed && styles.pressed,
+              completed && styles.disabledButton,
+              pressed && !completed && styles.pressed,
             ]}
           >
             <Ionicons
@@ -433,7 +442,7 @@ export default function OrganizerEventDetailsScreen({
               name={
                 completed
                   ? "checkmark-done-outline"
-                  : cancelled
+                  : cancelled || event.status === "draft"
                     ? "refresh-outline"
                     : "close-circle-outline"
               }
@@ -441,7 +450,7 @@ export default function OrganizerEventDetailsScreen({
               color={
                 completed
                   ? palette.secondary
-                  : cancelled
+                  : cancelled || event.status === "draft"
                     ? palette.purpleDark
                     : palette.danger
               }
@@ -463,6 +472,8 @@ export default function OrganizerEventDetailsScreen({
                 ? "Completed"
                 : cancelled
                   ? "Publish Again"
+                  : event.status === "draft"
+                    ? "Publish Event"
                   : "Cancel Event"}
             </Text>
           </Pressable>

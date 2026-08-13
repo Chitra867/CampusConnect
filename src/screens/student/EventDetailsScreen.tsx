@@ -23,6 +23,11 @@ import { usePreferenceStore } from "../../store/preferenceStore";
 import {
   useRegistrationStore,
 } from "../../store/registrationStore";
+import {
+  getTotalRegistrationCount,
+  hasEventStarted,
+  isRegistrationClosed,
+} from "../../utils/eventRules";
 
 import { colors } from "../../theme/colors";
 
@@ -101,18 +106,7 @@ export default function EventDetailsScreen({
           "registered"
     );
 
-  const localRegistrationCount =
-    registrations.filter(
-      (registration) =>
-        registration.eventId ===
-          event.id &&
-        registration.status ===
-          "registered"
-    ).length;
-
-  const registeredCount =
-    event.registered +
-    localRegistrationCount;
+  const registeredCount = getTotalRegistrationCount(event, registrations);
 
   const availableSeats = Math.max(
     event.capacity - registeredCount,
@@ -122,16 +116,7 @@ export default function EventDetailsScreen({
   const eventUnavailable =
     event.status !== "published";
 
-  const registrationClosed = Boolean(
-    event.registrationDeadline &&
-      (() => {
-        const deadline = new Date(event.registrationDeadline);
-        if (Number.isNaN(deadline.getTime())) return false;
-        const includesTime = /\d{1,2}:\d{2}|\b(?:am|pm)\b|T\d{2}/i.test(event.registrationDeadline);
-        if (!includesTime) deadline.setHours(23, 59, 59, 999);
-        return deadline.getTime() < Date.now();
-      })()
-  );
+  const registrationClosed = isRegistrationClosed(event) || hasEventStarted(event);
 
   const eventFull =
     availableSeats === 0 &&

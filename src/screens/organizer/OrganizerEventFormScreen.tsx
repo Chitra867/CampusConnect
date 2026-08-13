@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
 import { useRegistrationStore } from "../../store/registrationStore";
+import { getTotalRegistrationCount, parseDateTime } from "../../utils/eventRules";
 import { colors } from "../../theme/colors";
 
 import {
@@ -148,7 +149,7 @@ export default function OrganizerEventFormScreen({
     const parsedCapacity =
       Number(capacity);
 
-    const parsedEventDate = new Date(cleanDate);
+    const parsedEventDate = parseDateTime(cleanDate, cleanTime);
 
     if (
       !cleanTitle ||
@@ -167,22 +168,22 @@ export default function OrganizerEventFormScreen({
       return;
     }
 
-    if (Number.isNaN(parsedEventDate.getTime())) {
+    if (!parsedEventDate) {
       Alert.alert("Invalid Date", "Use a recognizable date such as September 10, 2026.");
       return;
     }
 
     if (endDate.trim()) {
-      const parsedEndDate = new Date(endDate.trim());
-      if (Number.isNaN(parsedEndDate.getTime()) || parsedEndDate < parsedEventDate) {
+      const parsedEndDate = parseDateTime(endDate.trim(), endTime.trim() || cleanTime);
+      if (!parsedEndDate || parsedEndDate < parsedEventDate) {
         Alert.alert("Invalid End Date", "The end date must be valid and cannot be before the event date.");
         return;
       }
     }
 
     if (registrationDeadline.trim()) {
-      const parsedDeadline = new Date(registrationDeadline.trim());
-      if (Number.isNaN(parsedDeadline.getTime()) || parsedDeadline > parsedEventDate) {
+      const parsedDeadline = parseDateTime(registrationDeadline.trim());
+      if (!parsedDeadline || parsedDeadline > parsedEventDate) {
         Alert.alert("Invalid Deadline", "The registration deadline must be valid and cannot be after the event date.");
         return;
       }
@@ -207,12 +208,9 @@ export default function OrganizerEventFormScreen({
       return;
     }
 
-    const activeLocalRegistrations = editingEvent
-      ? registrations.filter(
-          (item) => item.eventId === editingEvent.id && item.status === "registered"
-        ).length
+    const currentRegistrationCount = editingEvent
+      ? getTotalRegistrationCount(editingEvent, registrations)
       : 0;
-    const currentRegistrationCount = activeLocalRegistrations;
 
     if (editingEvent && parsedCapacity < currentRegistrationCount) {
       Alert.alert(

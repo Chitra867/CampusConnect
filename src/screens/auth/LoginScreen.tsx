@@ -139,7 +139,7 @@ export default function LoginScreen() {
                 </Pressable>
 
                 <Text style={styles.demoText}>
-                  Demo access: use any valid email and a password with at least four characters.
+                  Demo access: use organizer@college.edu for seeded organizer events, or any valid email for a separate account. Passwords need four characters.
                 </Text>
 
                 <View style={styles.signUpRow}>

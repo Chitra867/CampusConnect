@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
 import { useRegistrationStore } from "../../store/registrationStore";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 import { colors } from "../../theme/colors";
 
@@ -33,11 +34,7 @@ export default function OrganizerProfileScreen() {
   const registrations = useRegistrationStore((state) => state.registrations);
 
   const totalRegistrations = events.reduce(
-    (total, event) =>
-      total +
-      registrations.filter((registration) =>
-        registration.eventId === event.id && registration.status === "registered"
-      ).length,
+    (total, event) => total + getTotalRegistrationCount(event, registrations),
     0
   );
 

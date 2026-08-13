@@ -8,7 +8,7 @@ import {
 } from "zustand/middleware";
 
 import { INITIAL_EVENTS } from "../data/events";
-import { useAuthStore } from "./authStore";
+import { DEMO_ORGANIZER_ID, useAuthStore } from "./authStore";
 
 import {
   CampusEvent,
@@ -52,7 +52,9 @@ function normalizeEvent(
 
   return {
     ...event,
-    registered: 0,
+    registered: event.registered ?? 0,
+    createdBy:
+      event.createdBy === "organizer-1" ? DEMO_ORGANIZER_ID : event.createdBy,
 
     clubId:
       event.clubId ?? null,
@@ -69,6 +71,19 @@ function normalizeEvent(
     updatedAt:
       event.updatedAt ?? now,
   };
+}
+
+function canTransitionStatus(current: EventStatus, next: EventStatus): boolean {
+  if (current === next) return true;
+
+  const transitions: Record<EventStatus, readonly EventStatus[]> = {
+    draft: ["published"],
+    published: ["draft", "cancelled", "completed"],
+    cancelled: ["published"],
+    completed: [],
+  };
+
+  return transitions[current].includes(next);
 }
 
 export const useEventStore =
@@ -145,6 +160,10 @@ export const useEventStore =
             return false;
           }
 
+          if (existingEvent.status === "completed") {
+            return false;
+          }
+
           const organizer = useAuthStore.getState().user;
           if (!organizer || organizer.role !== "organizer" || existingEvent.createdBy !== organizer.id) {
             return false;
@@ -154,6 +173,11 @@ export const useEventStore =
             status,
             ...eventValues
           } = values;
+
+          const nextStatus = status ?? existingEvent.status;
+          if (!canTransitionStatus(existingEvent.status, nextStatus)) {
+            return false;
+          }
 
           set((state) => ({
             events: state.events.map(
@@ -168,9 +192,7 @@ export const useEventStore =
                   ...event,
                   ...eventValues,
 
-                  status:
-                    status ??
-                    event.status,
+                  status: nextStatus,
 
                   updatedAt:
                     new Date().toISOString(),
@@ -193,7 +215,7 @@ export const useEventStore =
             return false;
           }
 
-          if (existingEvent.status === "completed" && status !== "completed") {
+          if (!canTransitionStatus(existingEvent.status, status)) {
             return false;
           }
 
@@ -265,7 +287,7 @@ export const useEventStore =
           events: state.events,
         }),
 
-        version: 3,
+        version: 4,
 
         migrate: (
           persistedState: unknown

@@ -29,6 +29,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEventStore } from "../../store/eventStore";
 import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 import { colors } from "../../theme/colors";
 
@@ -101,12 +102,13 @@ export default function ManageEventsScreen() {
   ) => {
     const isCancelled =
       event.status === "cancelled";
+    const isDraft = event.status === "draft";
 
     Alert.alert(
-      isCancelled
+      isCancelled || isDraft
         ? "Publish Event"
         : "Cancel Event",
-      isCancelled
+      isCancelled || isDraft
         ? `Publish ${event.title} again?`
         : `Cancel ${event.title}? Students will no longer be able to register.`,
       [
@@ -115,16 +117,16 @@ export default function ManageEventsScreen() {
           style: "cancel",
         },
         {
-          text: isCancelled
+          text: isCancelled || isDraft
             ? "Publish"
             : "Cancel Event",
-          style: isCancelled
+          style: isCancelled || isDraft
             ? "default"
             : "destructive",
           onPress: () =>
             setEventStatus(
               event.id,
-              isCancelled
+              isCancelled || isDraft
                 ? "published"
                 : "cancelled"
             ),
@@ -283,9 +285,7 @@ export default function ManageEventsScreen() {
           </>
         }
         renderItem={({ item }) => {
-          const registrations = registrationRecords.filter(
-            (registration) => registration.eventId === item.id && registration.status === "registered"
-          ).length;
+          const registrations = getTotalRegistrationCount(item, registrationRecords);
 
           return (
             <OrganizerEventCard
@@ -406,6 +406,8 @@ function OrganizerEventCard({
 }: OrganizerEventCardProps) {
   const cancelled =
     event.status === "cancelled";
+  const draft = event.status === "draft";
+  const completed = event.status === "completed";
 
   const percentage = Math.min(
     100,
@@ -521,24 +523,22 @@ function OrganizerEventCard({
           onPress={onView}
         />
 
-        <ActionButton
-          label="Edit"
-          icon="create-outline"
-          onPress={onEdit}
-        />
+        {!completed ? (
+          <ActionButton
+            label="Edit"
+            icon="create-outline"
+            onPress={onEdit}
+          />
+        ) : null}
 
-        <ActionButton
-          label={
-            cancelled ? "Publish" : "Cancel"
-          }
-          icon={
-            cancelled
-              ? "refresh-outline"
-              : "close-circle-outline"
-          }
-          danger={!cancelled}
-          onPress={onStatusChange}
-        />
+        {!completed ? (
+          <ActionButton
+            label={cancelled || draft ? "Publish" : "Cancel"}
+            icon={cancelled || draft ? "refresh-outline" : "close-circle-outline"}
+            danger={!cancelled && !draft}
+            onPress={onStatusChange}
+          />
+        ) : null}
       </View>
     </View>
   );

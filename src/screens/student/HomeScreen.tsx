@@ -33,6 +33,7 @@ import { usePreferenceStore } from "../../store/preferenceStore";
 import {
   useRegistrationStore,
 } from "../../store/registrationStore";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 import {
   CampusEvent,
@@ -198,27 +199,6 @@ export default function HomeScreen() {
     );
   }, [events]);
 
-  const registrationCountMap =
-    useMemo(() => {
-      return registrations.reduce<
-        Record<string, number>
-      >((counts, registration) => {
-        if (
-          registration.status !==
-          "registered"
-        ) {
-          return counts;
-        }
-
-        counts[registration.eventId] =
-          (counts[
-            registration.eventId
-          ] ?? 0) + 1;
-
-        return counts;
-      }, {});
-    }, [registrations]);
-
   const filteredEvents =
     useMemo<CampusEvent[]>(() => {
       const normalizedSearch = search
@@ -273,19 +253,14 @@ export default function HomeScreen() {
         })
         .map((event) => ({
           ...event,
-
-          registered:
-            event.registered +
-            (registrationCountMap[
-              event.id
-            ] ?? 0),
+          registered: getTotalRegistrationCount(event, registrations),
         }));
     }, [
       events,
       search,
       selectedCategory,
       selectedClub,
-      registrationCountMap,
+      registrations,
     ]);
 
   const featuredEvent =

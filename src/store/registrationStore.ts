@@ -9,6 +9,11 @@ import {
 
 import { useAuthStore } from "./authStore";
 import { useEventStore } from "./eventStore";
+import {
+  getTotalRegistrationCount,
+  hasEventStarted,
+  isRegistrationClosed,
+} from "../utils/eventRules";
 
 import {
   AttendanceStatus,
@@ -86,14 +91,6 @@ function createRegistrationId(
   return `registration-${eventId}-${studentId}`;
 }
 
-function getDeadlineTime(value: string): number {
-  const deadline = new Date(value);
-  if (Number.isNaN(deadline.getTime())) return Number.NaN;
-
-  const includesTime = /\d{1,2}:\d{2}|\b(?:am|pm)\b|T\d{2}/i.test(value);
-  if (!includesTime) deadline.setHours(23, 59, 59, 999);
-  return deadline.getTime();
-}
 
 export const useRegistrationStore =
   create<RegistrationState>()(
@@ -138,15 +135,8 @@ export const useRegistrationStore =
             return "event_unavailable";
           }
 
-          if (event.registrationDeadline) {
-            const deadlineTime = getDeadlineTime(event.registrationDeadline);
-
-            if (
-              !Number.isNaN(deadlineTime) &&
-              deadlineTime < Date.now()
-            ) {
-              return "registration_closed";
-            }
+          if (isRegistrationClosed(event) || hasEventStarted(event)) {
+            return "registration_closed";
           }
 
           const existingRegistration =
@@ -167,19 +157,10 @@ export const useRegistrationStore =
             return "already_registered";
           }
 
-          const localActiveCount =
-            get().registrations.filter(
-              (registration) =>
-                registration.eventId ===
-                  eventId &&
-                isActiveRegistration(
-                  registration
-                )
-            ).length;
-
-          const totalRegistered =
-            event.registered +
-            localActiveCount;
+          const totalRegistered = getTotalRegistrationCount(
+            event,
+            get().registrations
+          );
 
           if (
             totalRegistered >=
@@ -314,7 +295,7 @@ export const useRegistrationStore =
           }
 
           const event = useEventStore.getState().events.find((item) => item.id === eventId);
-          if (!event || event.status === "completed") {
+          if (!event || event.status === "completed" || hasEventStarted(event)) {
             return false;
           }
 

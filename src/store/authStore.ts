@@ -54,6 +54,12 @@ function createStableUserId(
   return `${role}-${normalizedEmail}`;
 }
 
+export const DEMO_ORGANIZER_EMAIL = "organizer@college.edu";
+export const DEMO_ORGANIZER_ID = createStableUserId(
+  DEMO_ORGANIZER_EMAIL,
+  "organizer"
+);
+
 function createLocalUser(
   email: string,
   role: UserRole
@@ -65,7 +71,7 @@ function createLocalUser(
 
   if (role === "organizer") {
     return {
-      id: "organizer-1",
+      id: createStableUserId(cleanEmail, role),
 
       fullName: "Campus Organizer",
       email: cleanEmail,
@@ -129,9 +135,7 @@ export const useAuthStore =
 
           set({
             user: {
-              id: values.role === "organizer"
-                ? "organizer-1"
-                : createStableUserId(cleanEmail, values.role),
+              id: createStableUserId(cleanEmail, values.role),
               fullName: values.fullName.trim(),
               email: cleanEmail,
               role: values.role,
@@ -181,7 +185,20 @@ export const useAuthStore =
           user: state.user,
         }),
 
-        version: 1,
+        version: 2,
+        migrate: (persistedState: unknown) => {
+          const savedState = persistedState as { user?: AuthUser | null };
+          const user = savedState?.user;
+          if (!user) return savedState;
+
+          return {
+            ...savedState,
+            user: {
+              ...user,
+              id: createStableUserId(user.email, user.role),
+            },
+          };
+        },
         onRehydrateStorage: () => (state) => {
           state?.setHasHydrated(true);
         },

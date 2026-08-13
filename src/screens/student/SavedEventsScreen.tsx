@@ -11,6 +11,7 @@ import { usePreferenceStore } from "../../store/preferenceStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 import { colors } from "../../theme/colors";
 import { StudentRootStackParamList } from "../../types";
+import { getTotalRegistrationCount } from "../../utils/eventRules";
 
 type NavigationProp = NativeStackNavigationProp<StudentRootStackParamList>;
 
@@ -25,22 +26,11 @@ export default function SavedEventsScreen() {
     : [];
   const toggleBookmark = usePreferenceStore((state) => state.toggleBookmark);
 
-  const activeCounts = registrations.reduce<Record<string, number>>(
-    (counts, registration) => {
-      if (registration.status === "registered") {
-        counts[registration.eventId] =
-          (counts[registration.eventId] ?? 0) + 1;
-      }
-      return counts;
-    },
-    {}
-  );
-
   const savedEvents = events
     .filter((event) => bookmarkedEventIds.includes(event.id))
     .map((event) => ({
       ...event,
-      registered: event.registered + (activeCounts[event.id] ?? 0),
+      registered: getTotalRegistrationCount(event, registrations),
     }));
 
   return (
