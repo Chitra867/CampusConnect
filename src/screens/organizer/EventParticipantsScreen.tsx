@@ -9,8 +9,6 @@ import {
   View,
 } from "react-native";
 
-import { useMemo, useState } from "react";
-
 import { Ionicons } from "@expo/vector-icons";
 
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -20,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEventStore } from "../../store/eventStore";
 import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
+import { useParticipantFilters } from "../../hooks/useParticipantFilters";
 
 import {
   AttendanceStatus,
@@ -31,14 +30,6 @@ type Props = NativeStackScreenProps<
   OrganizerRootStackParamList,
   "OrganizerParticipants"
 >;
-
-type ParticipantFilter =
-  | "all"
-  | "registered"
-  | "pending"
-  | "attended"
-  | "absent"
-  | "cancelled";
 
 const palette = {
   navy: "#111378",
@@ -79,117 +70,15 @@ export default function EventParticipantsScreen({
     (state) => state.markAttendance
   );
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] =
-    useState<ParticipantFilter>("all");
-
-  const eventRegistrations = useMemo(() => {
-    return registrations
-      .filter(
-        (registration) =>
-          registration.eventId === eventId
-      )
-      .sort((first, second) => {
-        if (
-          first.status !== second.status
-        ) {
-          return first.status === "registered"
-            ? -1
-            : 1;
-        }
-
-        return (
-          new Date(second.registeredAt).getTime() -
-          new Date(first.registeredAt).getTime()
-        );
-      });
-  }, [eventId, registrations]);
-
-  const counts = useMemo(() => {
-    const active = eventRegistrations.filter(
-      (registration) =>
-        registration.status === "registered"
-    );
-
-    return {
-      all: eventRegistrations.length,
-
-      registered: active.length,
-
-      pending: active.filter(
-        (registration) =>
-          registration.attendanceStatus === "pending"
-      ).length,
-
-      attended: active.filter(
-        (registration) =>
-          registration.attendanceStatus === "attended"
-      ).length,
-
-      absent: active.filter(
-        (registration) =>
-          registration.attendanceStatus === "absent"
-      ).length,
-
-      cancelled: eventRegistrations.filter(
-        (registration) =>
-          registration.status === "cancelled"
-      ).length,
-    };
-  }, [eventRegistrations]);
-
-  const filteredParticipants = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
-
-    return eventRegistrations.filter(
-      (registration) => {
-        const matchesSearch =
-          !query ||
-          registration.studentName
-            .toLowerCase()
-            .includes(query) ||
-          registration.studentEmail
-            .toLowerCase()
-            .includes(query) ||
-          registration.collegeId
-            .toLowerCase()
-            .includes(query) ||
-          registration.program
-            .toLowerCase()
-            .includes(query);
-
-        let matchesFilter = true;
-
-        switch (filter) {
-          case "registered":
-            matchesFilter =
-              registration.status === "registered";
-            break;
-
-          case "cancelled":
-            matchesFilter =
-              registration.status === "cancelled";
-            break;
-
-          case "pending":
-          case "attended":
-          case "absent":
-            matchesFilter =
-              registration.status === "registered" &&
-              registration.attendanceStatus === filter;
-            break;
-
-          case "all":
-          default:
-            matchesFilter = true;
-        }
-
-        return matchesSearch && matchesFilter;
-      }
-    );
-  }, [eventRegistrations, filter, search]);
+  const {
+    counts,
+    eventRegistrations,
+    filter,
+    filteredParticipants,
+    search,
+    setFilter,
+    setSearch,
+  } = useParticipantFilters(registrations, eventId);
 
   const handleAttendance = (
     registrationId: string,

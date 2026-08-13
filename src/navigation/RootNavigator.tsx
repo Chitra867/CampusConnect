@@ -1,5 +1,5 @@
-import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
+import LoadingScreen from "../components/common/LoadingScreen";
 
 import {
   createBottomTabNavigator,
@@ -304,11 +304,7 @@ export default function RootNavigator() {
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
   if (!hasHydrated) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#078451" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -323,12 +319,3 @@ export default function RootNavigator() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: navigationColors.background,
-  },
-});

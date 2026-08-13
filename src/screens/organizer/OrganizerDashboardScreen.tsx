@@ -17,18 +17,17 @@ import {
 } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import OrganizerStatsCard from "../../components/organizer/OrganizerStatsCard";
+import EventStatusBadge from "../../components/events/EventStatusBadge";
 
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
 import { useRegistrationStore } from "../../store/registrationStore";
-import { getTotalRegistrationCount } from "../../utils/eventRules";
+import { useOrganizerStats } from "../../hooks/useOrganizerStats";
 
 import { colors } from "../../theme/colors";
 
-import {
-  CampusEvent,
-  OrganizerRootStackParamList,
-} from "../../types";
+import { OrganizerRootStackParamList } from "../../types";
 
 type NavigationProp =
   NativeStackNavigationProp<OrganizerRootStackParamList>;
@@ -44,39 +43,19 @@ export default function OrganizerDashboardScreen() {
   const allEvents = useEventStore(
     (state) => state.events
   );
-  const events = allEvents.filter((event) => event.createdBy === user?.id);
-
   const registrations =
     useRegistrationStore(
       (state) => state.registrations
     );
 
-  const totalRegistrations = events.reduce(
-    (total, event) => total + getTotalRegistrationCount(event, registrations),
-    0
-  );
-
-  const publishedEvents = events.filter(
-    (event) => event.status === "published"
-  );
-
-  const cancelledEvents = events.filter(
-    (event) => event.status === "cancelled"
-  );
-
-  const recentEvents = [...events]
-    .sort(
-      (first, second) =>
-        new Date(second.updatedAt).getTime() -
-        new Date(first.updatedAt).getTime()
-    )
-    .slice(0, 4);
-
-  const getRegistrationCount = (
-    event: CampusEvent
-  ) => {
-    return getTotalRegistrationCount(event, registrations);
-  };
+  const {
+    cancelledCount,
+    events,
+    getRegistrationCount,
+    publishedCount,
+    recentEvents,
+    totalRegistrations,
+  } = useOrganizerStats(allEvents, registrations, user?.id);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -178,30 +157,30 @@ export default function OrganizerDashboardScreen() {
         </Text>
 
         <View style={styles.statsGrid}>
-          <StatCard
+          <OrganizerStatsCard
             title="Total Events"
             value={events.length.toString()}
             icon="calendar-outline"
             tone="purple"
           />
 
-          <StatCard
+          <OrganizerStatsCard
             title="Registrations"
             value={totalRegistrations.toString()}
             icon="people-outline"
             tone="blue"
           />
 
-          <StatCard
+          <OrganizerStatsCard
             title="Published"
-            value={publishedEvents.length.toString()}
+            value={publishedCount.toString()}
             icon="checkmark-circle-outline"
             tone="green"
           />
 
-          <StatCard
+          <OrganizerStatsCard
             title="Cancelled"
-            value={cancelledEvents.length.toString()}
+            value={cancelledCount.toString()}
             icon="close-circle-outline"
             tone="red"
           />
@@ -222,7 +201,7 @@ export default function OrganizerDashboardScreen() {
         {recentEvents.length > 0 ? (
           recentEvents.map((event) => {
             const registrations =
-              getRegistrationCount(event);
+              getRegistrationCount(event.id);
 
             const percentage = Math.min(
               100,
@@ -281,7 +260,7 @@ export default function OrganizerDashboardScreen() {
                     </View>
                   </View>
 
-                  <StatusBadge
+                  <EventStatusBadge
                     status={event.status}
                   />
                 </View>
@@ -369,106 +348,6 @@ export default function OrganizerDashboardScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-interface StatCardProps {
-  title: string;
-  value: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  tone: "purple" | "blue" | "green" | "red";
-}
-
-function StatCard({
-  title,
-  value,
-  icon,
-  tone,
-}: StatCardProps) {
-  const toneStyles = {
-    purple: {
-      backgroundColor: "#EFEDFF",
-      color: colors.primary,
-    },
-    blue: {
-      backgroundColor: "#EAF4FF",
-      color: "#3478C9",
-    },
-    green: {
-      backgroundColor: "#EAF8F2",
-      color: colors.success,
-    },
-    red: {
-      backgroundColor: "#FFF1F1",
-      color: colors.danger,
-    },
-  };
-
-  const selectedTone = toneStyles[tone];
-
-  return (
-    <View style={styles.statCard}>
-      <View
-        style={[
-          styles.statIcon,
-          {
-            backgroundColor:
-              selectedTone.backgroundColor,
-          },
-        ]}
-      >
-        <Ionicons
-          name={icon}
-          size={23}
-          color={selectedTone.color}
-        />
-      </View>
-
-      <Text style={styles.statValue}>
-        {value}
-      </Text>
-
-      <Text style={styles.statTitle}>
-        {title}
-      </Text>
-    </View>
-  );
-}
-
-function StatusBadge({
-  status,
-}: {
-  status: CampusEvent["status"];
-}) {
-  const cancelled = status === "cancelled";
-  const completed = status === "completed";
-
-  return (
-    <View
-      style={[
-        styles.statusBadge,
-        cancelled && styles.cancelledBadge,
-        completed && styles.completedBadge,
-      ]}
-    >
-      <View
-        style={[
-          styles.statusDot,
-          cancelled && styles.cancelledDot,
-          completed && styles.completedDot,
-        ]}
-      />
-
-      <Text
-        style={[
-          styles.statusText,
-          cancelled && styles.cancelledText,
-          completed && styles.completedText,
-        ]}
-      >
-        {status}
-      </Text>
-    </View>
   );
 }
 
@@ -617,37 +496,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
 
-  statCard: {
-    width: "48%",
-    marginBottom: 14,
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  statIcon: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 13,
-    borderRadius: 14,
-  },
-
-  statValue: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "900",
-  },
-
-  statTitle: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
 
   eventCard: {
     marginTop: 14,
@@ -693,54 +541,6 @@ const styles = StyleSheet.create({
   eventMeta: {
     color: colors.textSecondary,
     fontSize: 12,
-  },
-
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    gap: 5,
-    borderRadius: 12,
-    backgroundColor: "#EAF8F2",
-  },
-
-  cancelledBadge: {
-    backgroundColor: "#FFF1F1",
-  },
-
-  completedBadge: {
-    backgroundColor: "#EAF4FF",
-  },
-
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success,
-  },
-
-  cancelledDot: {
-    backgroundColor: colors.danger,
-  },
-
-  completedDot: {
-    backgroundColor: "#3478C9",
-  },
-
-  statusText: {
-    color: colors.success,
-    fontSize: 10,
-    fontWeight: "900",
-    textTransform: "capitalize",
-  },
-
-  cancelledText: {
-    color: colors.danger,
-  },
-
-  completedText: {
-    color: "#3478C9",
   },
 
   locationRow: {

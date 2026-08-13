@@ -2,17 +2,10 @@ import {
   Alert,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-
-import {
-  useMemo,
-  useState,
-} from "react";
 
 import { Ionicons } from "@expo/vector-icons";
 
@@ -25,24 +18,23 @@ import {
 } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import EventFilters from "../../components/events/EventFilters";
 
 import { useEventStore } from "../../store/eventStore";
 import { useAuthStore } from "../../store/authStore";
 import { useRegistrationStore } from "../../store/registrationStore";
 import { getTotalRegistrationCount } from "../../utils/eventRules";
+import { useEventFilters } from "../../hooks/useEventFilters";
 
 import { colors } from "../../theme/colors";
 
 import {
   CampusEvent,
-  EventStatus,
   OrganizerRootStackParamList,
 } from "../../types";
 
 type NavigationProp =
   NativeStackNavigationProp<OrganizerRootStackParamList>;
-
-type EventFilter = "all" | EventStatus;
 
 export default function ManageEventsScreen() {
   const navigation =
@@ -61,41 +53,14 @@ export default function ManageEventsScreen() {
 
   const registrationRecords = useRegistrationStore((state) => state.registrations);
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] =
-    useState<EventFilter>("all");
-
-  const filteredEvents = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
-
-    return [...events]
-      .filter((event) => {
-        const matchesFilter =
-          filter === "all" ||
-          event.status === filter;
-
-        const matchesSearch =
-          !query ||
-          event.title
-            .toLowerCase()
-            .includes(query) ||
-          event.category
-            .toLowerCase()
-            .includes(query) ||
-          event.venue
-            .toLowerCase()
-            .includes(query);
-
-        return matchesFilter && matchesSearch;
-      })
-      .sort(
-        (first, second) =>
-          new Date(second.updatedAt).getTime() -
-          new Date(first.updatedAt).getTime()
-      );
-  }, [events, search, filter]);
+  const {
+    filter,
+    filteredEvents,
+    search,
+    setFilter,
+    setSearch,
+    statusCounts,
+  } = useEventFilters(events);
 
   const handleStatusChange = (
     event: CampusEvent
@@ -175,103 +140,13 @@ export default function ManageEventsScreen() {
               </Pressable>
             </View>
 
-            <View style={styles.searchBox}>
-              <Ionicons
-                name="search-outline"
-                size={21}
-                color={colors.textSecondary}
-              />
-
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search your events..."
-                placeholderTextColor={
-                  colors.textSecondary
-                }
-                style={styles.searchInput}
-              />
-
-              {search.length > 0 ? (
-                <Pressable
-                  onPress={() => setSearch("")}
-                >
-                  <Ionicons
-                    name="close-circle"
-                    size={21}
-                    color={
-                      colors.textSecondary
-                    }
-                  />
-                </Pressable>
-              ) : null}
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={
-                styles.filters
-              }
-            >
-              <FilterButton
-                label="All"
-                count={events.length}
-                selected={filter === "all"}
-                onPress={() => setFilter("all")}
-              />
-
-              <FilterButton
-                label="Published"
-                count={
-                  events.filter(
-                    (event) =>
-                      event.status ===
-                      "published"
-                  ).length
-                }
-                selected={
-                  filter === "published"
-                }
-                onPress={() =>
-                  setFilter("published")
-                }
-              />
-
-              <FilterButton
-                label="Cancelled"
-                count={
-                  events.filter(
-                    (event) =>
-                      event.status ===
-                      "cancelled"
-                  ).length
-                }
-                selected={
-                  filter === "cancelled"
-                }
-                onPress={() =>
-                  setFilter("cancelled")
-                }
-              />
-
-              <FilterButton
-                label="Completed"
-                count={
-                  events.filter(
-                    (event) =>
-                      event.status ===
-                      "completed"
-                  ).length
-                }
-                selected={
-                  filter === "completed"
-                }
-                onPress={() =>
-                  setFilter("completed")
-                }
-              />
-            </ScrollView>
+            <EventFilters
+              search={search}
+              selected={filter}
+              counts={statusCounts}
+              onSearchChange={setSearch}
+              onFilterChange={setFilter}
+            />
 
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>
@@ -335,57 +210,6 @@ export default function ManageEventsScreen() {
         }
       />
     </SafeAreaView>
-  );
-}
-
-interface FilterButtonProps {
-  label: string;
-  count: number;
-  selected: boolean;
-  onPress: () => void;
-}
-
-function FilterButton({
-  label,
-  count,
-  selected,
-  onPress,
-}: FilterButtonProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.filterButton,
-        selected && styles.selectedFilter,
-      ]}
-    >
-      <Text
-        style={[
-          styles.filterText,
-          selected && styles.selectedFilterText,
-        ]}
-      >
-        {label}
-      </Text>
-
-      <View
-        style={[
-          styles.filterCount,
-          selected &&
-            styles.selectedFilterCount,
-        ]}
-      >
-        <Text
-          style={[
-            styles.filterCountText,
-            selected &&
-              styles.selectedFilterCountText,
-          ]}
-        >
-          {count}
-        </Text>
-      </View>
-    </Pressable>
   );
 }
 
@@ -652,81 +476,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 17,
     backgroundColor: colors.primary,
-  },
-
-  searchBox: {
-    minHeight: 53,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    gap: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  searchInput: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 15,
-  },
-
-  filters: {
-    paddingTop: 16,
-    paddingBottom: 20,
-    gap: 9,
-  },
-
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 7,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  selectedFilter: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-
-  filterText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  selectedFilterText: {
-    color: colors.white,
-  },
-
-  filterCount: {
-    minWidth: 23,
-    height: 23,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: colors.primarySoft,
-  },
-
-  selectedFilterCount: {
-    backgroundColor: "rgba(255,255,255,0.20)",
-  },
-
-  filterCountText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "900",
-  },
-
-  selectedFilterCountText: {
-    color: colors.white,
   },
 
   resultHeader: {

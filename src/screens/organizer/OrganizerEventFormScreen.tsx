@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
@@ -22,6 +21,8 @@ import {
 } from "@react-navigation/native-stack";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import FormInput from "../../components/common/AppInput";
+import AppButton from "../../components/common/AppButton";
 
 import { useAuthStore } from "../../store/authStore";
 import { useEventStore } from "../../store/eventStore";
@@ -397,38 +398,15 @@ export default function OrganizerEventFormScreen({
             placeholder="https://example.com/event-poster.jpg"
           />
 
-          <Text style={styles.label}>
-            Description
-          </Text>
-
-          <View
-            style={[
-              styles.inputContainer,
-              styles.descriptionContainer,
-            ]}
-          >
-            <Ionicons
-              name="document-text-outline"
-              size={20}
-              color={colors.textSecondary}
-              style={styles.descriptionIcon}
-            />
-
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Enter complete event details..."
-              placeholderTextColor={
-                colors.textSecondary
-              }
-              multiline
-              textAlignVertical="top"
-              style={[
-                styles.input,
-                styles.descriptionInput,
-              ]}
-            />
-          </View>
+          <FormInput
+            label="Description"
+            icon="document-text-outline"
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Enter complete event details..."
+            multiline
+            textAlignVertical="top"
+          />
 
           <Text style={styles.label}>Publishing</Text>
           <View style={styles.statusSelector}>
@@ -436,29 +414,11 @@ export default function OrganizerEventFormScreen({
             <StatusOption label="Save draft" icon="document-outline" selected={!publishNow} onPress={() => setPublishNow(false)} />
           </View>
 
-          <Pressable
+          <AppButton
             onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons
-              name={
-                editing
-                  ? "save-outline"
-                  : "add-circle-outline"
-              }
-              size={21}
-              color={colors.white}
-            />
-
-            <Text style={styles.saveText}>
-              {editing
-                ? "Save Changes"
-                : "Create Event"}
-            </Text>
-          </Pressable>
+            icon={editing ? "save-outline" : "add-circle-outline"}
+            label={editing ? "Save Changes" : "Create Event"}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -471,53 +431,6 @@ function StatusOption({ label, icon, selected, onPress }: { label: string; icon:
       <Ionicons name={icon} size={19} color={selected ? colors.white : colors.primary} />
       <Text style={[styles.statusOptionText, selected && styles.selectedStatusOptionText]}>{label}</Text>
     </Pressable>
-  );
-}
-
-interface FormInputProps {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  value: string;
-  placeholder: string;
-  keyboardType?: "default" | "number-pad";
-  onChangeText: (
-    value: string
-  ) => void;
-}
-
-function FormInput({
-  label,
-  icon,
-  value,
-  placeholder,
-  keyboardType = "default",
-  onChangeText,
-}: FormInputProps) {
-  return (
-    <>
-      <Text style={styles.label}>
-        {label}
-      </Text>
-
-      <View style={styles.inputContainer}>
-        <Ionicons
-          name={icon}
-          size={20}
-          color={colors.textSecondary}
-        />
-
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={
-            colors.textSecondary
-          }
-          keyboardType={keyboardType}
-          style={styles.input}
-        />
-      </View>
-    </>
   );
 }
 
@@ -571,39 +484,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  inputContainer: {
-    minHeight: 53,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 17,
-    paddingHorizontal: 15,
-    gap: 10,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  input: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 15,
-  },
-
-  descriptionContainer: {
-    minHeight: 130,
-    alignItems: "flex-start",
-    paddingTop: 15,
-  },
-
-  descriptionIcon: {
-    marginTop: 2,
-  },
-
-  descriptionInput: {
-    minHeight: 100,
-    paddingTop: 0,
-  },
 
   twoColumnRow: {
     flexDirection: "row",
@@ -645,23 +525,6 @@ const styles = StyleSheet.create({
 
   selectedStatusOptionText: {
     color: colors.white,
-  },
-
-  saveButton: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 5,
-    gap: 8,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-  },
-
-  saveText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: "900",
   },
 
   pressed: {

@@ -10,7 +10,6 @@ import {
 } from "react-native";
 
 import {
-  useMemo,
   useState,
 } from "react";
 
@@ -33,7 +32,7 @@ import { usePreferenceStore } from "../../store/preferenceStore";
 import {
   useRegistrationStore,
 } from "../../store/registrationStore";
-import { getTotalRegistrationCount } from "../../utils/eventRules";
+import { useHomeEvents } from "../../hooks/useHomeEvents";
 
 import {
   CampusEvent,
@@ -172,105 +171,14 @@ export default function HomeScreen() {
     (state) => state.toggleBookmark
   );
 
-  const categories = useMemo(() => {
-    const uniqueCategories =
-      Array.from(
-        new Set(
-          events.map(
-            (event) => event.category
-          )
-        )
-      );
-
-    return [
-      "All",
-      ...uniqueCategories,
-    ];
-  }, [events]);
-
-  const clubs = useMemo(() => {
-    return Array.from(
-      new Set(
-        events.map(
-          (event) =>
-            event.organizerName
-        )
-      )
-    );
-  }, [events]);
-
-  const filteredEvents =
-    useMemo<CampusEvent[]>(() => {
-      const normalizedSearch = search
-        .trim()
-        .toLowerCase();
-
-      return events
-        .filter(
-          (event) =>
-            event.status ===
-            "published"
-        )
-        .filter((event) => {
-          const matchesCategory =
-            selectedCategory === "All" ||
-            event.category ===
-              selectedCategory;
-
-          const matchesClub =
-            !selectedClub ||
-            event.organizerName ===
-              selectedClub;
-
-          const matchesSearch =
-            !normalizedSearch ||
-            event.title
-              .toLowerCase()
-              .includes(
-                normalizedSearch
-              ) ||
-            event.category
-              .toLowerCase()
-              .includes(
-                normalizedSearch
-              ) ||
-            event.venue
-              .toLowerCase()
-              .includes(
-                normalizedSearch
-              ) ||
-            event.organizerName
-              .toLowerCase()
-              .includes(
-                normalizedSearch
-              );
-
-          return (
-            matchesCategory &&
-            matchesClub &&
-            matchesSearch
-          );
-        })
-        .map((event) => ({
-          ...event,
-          registered: getTotalRegistrationCount(event, registrations),
-        }));
-    }, [
-      events,
-      search,
-      selectedCategory,
-      selectedClub,
-      registrations,
-    ]);
-
-  const featuredEvent =
-    filteredEvents[0];
-
-  const recommendationEvents =
-    filteredEvents.slice(1, 3);
-
-  const upcomingEvents =
-    filteredEvents.slice(3);
+  const {
+    categories,
+    clubs,
+    filteredEvents,
+    featuredEvent,
+    recommendationEvents,
+    upcomingEvents,
+  } = useHomeEvents(events, registrations, search, selectedCategory, selectedClub);
 
   const navigateToEvent = (
     eventId: string
